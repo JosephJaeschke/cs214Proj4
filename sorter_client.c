@@ -18,7 +18,9 @@
 #include <netdb.h>
 
 /* others */
+#include <sys/sendfile.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 /* Define default port number and addr */
 #define PORT 9000
@@ -97,19 +99,34 @@ int main(int argc, char **argv)
 		// exit your program
 		exit(EXIT_FAILURE);
 	}
+	/*
 	printf("Please enter your message: ");
 	// You can use fgets() in this demo to receive user input
 	fgets(buffer, 256, stdin);
 	// call write to send data
 	int n = write(sockfd, buffer, 256);
 	// check if message is sent successfully
-	
+	*/
+	printf("Sending file...\n");
+	FILE* fd=fopen("movie_metadata.csv","r");
+	fseek(fd,0L,SEEK_END);
+	long size=ftell(fd);
+	fseek(fd,0L,SEEK_SET);
+	char* sz;
+	printf("f size: %lu bytes\n",size);
+	sprintf(sz,"%lu",size);
+	int n=write(sockfd,sz,sizeof(sz));
+	if(n<=0)
+	{
+		perror("write");
+	}
+	n=sendfile(sockfd,fileno(fd),NULL,size);
 	if (n <= 0)
 	{
 		// perror() again...
 		perror("write");
 	}
-
+	fclose(fd);
 	// call read to receive data from server
 	memset(buffer, 0, 256);
 	n = read(sockfd, buffer, 256);

@@ -29,6 +29,16 @@
 /********* Coding End ***********/
 
 
+
+
+
+
+
+
+
+
+
+
 /********** Helper functions ***********/
 int status = 1; // for server running status
 int num_of_thread = 0; // currently created num of threads
@@ -86,14 +96,20 @@ void * service(void *args)
 	int index = (int)args;
 	int client_socket = tid_pool[index].socketfd;
 	// define two buffers, receive and send
-	char send_buf[256] = "Hello World!";
+	char send_buf[256] = "\nHello -scincerelly server\n";
 	char recv_buf[256];
 	/* STEP 5: receive data */
 	// use read system call to read data 
 	read(client_socket, recv_buf, 256);
+	printf("[r] make room for %lu bytes\n",strtol(recv_buf,NULL,10));
+	char filebuff[strtol(recv_buf,NULL,10)];
 	// replace receive buffer with your buffer name
-	printf("[r] Reading from client: %s\n", recv_buf);
-
+//	printf("[r] Reading from client: %s\n", recv_buf);
+	read(client_socket,filebuff,strtol(recv_buf,NULL,10));
+	//printf("[r] %s\n\n",filebuff);
+	FILE* out=fopen("server_dump.csv","w");
+	fprintf(out,filebuff);
+	fclose(out);
 	/* STEP 6: send data */
 	// prepare your sending data
 	// use write system call to send data
