@@ -117,18 +117,25 @@ int main(int argc, char **argv)
 	sprintf(sz,"%lu",size);
 	fflush(stdout);
 	int n=write(sockfd,sz,sizeof(sz));
+	printf("after size write n=%d\n",n);
+	fflush(stdout);
 	if(n<=0)
 	{
 		perror("write");
 	}
-
-	n=sendfile(sockfd,fileno(fd),NULL,size);
-	printf("sent %d bytes\n",n);
-	if(n<=0)
+	fflush(stdout);
+	while(1)
 	{
-		perror("sendfile");
+		n=sendfile(sockfd,fileno(fd),NULL,size);
+		//printf("sent %d bytes\n",n);
+		char response[2];
+		read(sockfd,response,2);
+		if(response[0]=='!')
+		{
+			printf("sent all of it\n");
+			break;
+		}
 	}
-
 
 	fclose(fd);
 	// call read to receive data from server

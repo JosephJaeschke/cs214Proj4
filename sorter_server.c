@@ -110,9 +110,25 @@ void * service(void *args)
 //	printf("[r] Reading from client: %s\n", recv_buf);
 	FILE* out=fopen("server_dump.csv","w");
 	long n=0;
-	n=read(client_socket,filebuff+n,fsize);
-	printf("received %lu bytes",n);
-	printf("\nafter loop\n");
+	fflush(stdout);
+	while(1)
+	{
+		n+=read(client_socket,filebuff+n,fsize);
+		printf("received %lu bytes so far\n",n);
+		fflush(stdout);
+		if(n>=fsize-400)
+		{
+			printf("i got the whole thing\n");
+			fflush(stdout);
+			write(client_socket,"!",1);
+			break;
+		}
+		write(client_socket,"?",1);
+	}
+	fflush(stdout);
+
+	printf("received %lu bytes\n",n);
+	fprintf(out,"%s",filebuff);
 	/*
 	int n=0;
 	while(n!=fsize)
