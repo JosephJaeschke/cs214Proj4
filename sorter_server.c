@@ -11,8 +11,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 /* Socket Stuff */
+#include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -96,26 +98,43 @@ void * service(void *args)
 	int index = (int)args;
 	int client_socket = tid_pool[index].socketfd;
 	// define two buffers, receive and send
-	char send_buf[256] = "\nHello -scincerelly server\n";
+	char send_buf[256] = "\nThank you for file\n";
 	char recv_buf[256];
 	/* STEP 5: receive data */
 	// use read system call to read data 
 	read(client_socket, recv_buf, 256);
-	printf("[r] make room for %lu bytes\n",strtol(recv_buf,NULL,10));
-	char filebuff[strtol(recv_buf,NULL,10)];
+	long fsize=strtol(recv_buf,NULL,10);
+	printf("[r] make room for %lu bytes\n",fsize);
+	char filebuff[fsize];
 	// replace receive buffer with your buffer name
 //	printf("[r] Reading from client: %s\n", recv_buf);
-	read(client_socket,filebuff,strtol(recv_buf,NULL,10));
-	//printf("[r] %s\n\n",filebuff);
 	FILE* out=fopen("server_dump.csv","w");
-	fprintf(out,filebuff);
+	long n=0;
+	n=read(client_socket,filebuff+n,fsize);
+	printf("received %lu bytes",n);
+	printf("\nafter loop\n");
+	/*
+	int n=0;
+	while(n!=fsize)
+	{
+		printf("1");
+		n+=recv(client_socket,filebuff,fsize,0);
+		printf("received %d bytes\n",n);
+		if(n<=0)
+		{
+			printf("err\n");
+			perror("read");	
+		}
+	}
+	*/
+	//printf("[r] %s\n\n",filebuff);
 	fclose(out);
 	/* STEP 6: send data */
 	// prepare your sending data
 	// use write system call to send data
 	write(client_socket, send_buf, 256);
 
-	printf("[s] Data sent\n");
+	printf("[s] Data sent\n===\n");
 
 	/* STEP 7: close socket */
 	close(client_socket);

@@ -115,17 +115,21 @@ int main(int argc, char **argv)
 	char* sz;
 	printf("f size: %lu bytes\n",size);
 	sprintf(sz,"%lu",size);
+	fflush(stdout);
 	int n=write(sockfd,sz,sizeof(sz));
 	if(n<=0)
 	{
 		perror("write");
 	}
+
 	n=sendfile(sockfd,fileno(fd),NULL,size);
-	if (n <= 0)
+	printf("sent %d bytes\n",n);
+	if(n<=0)
 	{
-		// perror() again...
-		perror("write");
+		perror("sendfile");
 	}
+
+
 	fclose(fd);
 	// call read to receive data from server
 	memset(buffer, 0, 256);
