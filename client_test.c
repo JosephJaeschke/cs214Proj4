@@ -23,8 +23,10 @@ int main(int argc,char **argv)
     sockfd=socket(AF_INET,SOCK_STREAM,0);
     bzero(&servaddr,sizeof servaddr);
  
-    servaddr.sin_family=AF_INET;
-    servaddr.sin_port=htons(22000);
+    int port = atoi(argv[2]);
+	servaddr.sin_family=AF_INET;
+
+    servaddr.sin_port=htons(port);
  
     inet_pton(AF_INET,"127.0.0.1",&(servaddr.sin_addr));
  
@@ -84,17 +86,20 @@ int main(int argc,char **argv)
 	free(filename1);
 	}	
 	
+	
 	str_file[i] = '\0';	
 	
 	int sentn = htonl(file_count);
 	
+	char * recvline = malloc(100);
+	//read(sockfd,recvline,100);
+        	
 	write(sockfd,&sentn ,sizeof(sentn));   	
 
 	int index1 = 0;
 	int index2 = 0;
 
-	char * recvline = malloc(100);
-
+	
     for(j = 0; j < file_count; j++)
     {
         
@@ -109,15 +114,17 @@ int main(int argc,char **argv)
 		strncpy(sendline,str_file+index1, index2 - index1);
 
         //fgets(sendline,100,stdin); /*stdin = 0 , for standard input */
-		printf("%s", sendline); 
+		//printf("%s", sendline); 
         
 		write(sockfd,sendline,strlen(sendline)+1);
        	
 		index1 = index2; 
 		
 		read(sockfd,recvline,100);
-        //printf("%s",recvline);
+        printf("%s",recvline);
     }
+	
+	//read(sockfd,recvline,100);    
 	printf("\n");
- 
+	return 0; 
 }
