@@ -38,8 +38,8 @@ int main(int argc,char **argv)
 
 	char * filename1 = malloc(100);
 	
-	strncpy(filename1, argv[1], sizeof(argv[2]));
-	filename1[sizeof(argv[1]) + 1] = '\0';
+	strncpy(filename1, argv[1], strlen(argv[1]));
+	filename1[strlen(argv[1]) + 1] = '\0';
 
 	printf("%s\n", filename1);
 	FILE * fp = fopen(filename1, "r");
