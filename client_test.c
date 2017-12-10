@@ -121,10 +121,10 @@ int main(int argc,char **argv)
 		index1 = index2; 
 		
 		read(sockfd,recvline,100);
-        printf("%s",recvline);
+        //printf("%s",recvline);
     }
 	
 	//read(sockfd,recvline,100);    
-	printf("\n");
+	printf("\nFile Sent\n");
 	return 0; 
 }
