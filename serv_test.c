@@ -6,11 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 int main()
 {
  
-    char str[100];
+    char * str = malloc(10000);
     int listen_fd, comm_fd;
  
     struct sockaddr_in servaddr;
@@ -29,20 +30,33 @@ int main()
  
     comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
  
-    while(1)
+    int size = 0;
+
+	read(comm_fd,&size , sizeof(size)); 
+	
+	printf("Size is %d\n", ntohl(size));
+	
+	char * recv = malloc(100);
+	strcpy(recv, "hello");
+
+	int j = 0;
+	for (j = 0; j < ntohl(size); j++)
     {
  
-        bzero(str, 100);
+        bzero(str, 10000);
  
-        if(read(comm_fd,str,100) == 0) {
+        if(read(comm_fd,str,10000) == 0) {
 			printf("client disconnected\n");
 			listen(listen_fd, 10);
  			comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
 		}
 		else {
-        	printf("Echoing back - %s",str);
- 		}
-	//write(comm_fd, str, strlen(str)+1);
- 
+        	printf("%s",str);
+ 			write(comm_fd, recv, strlen(recv)+1);
+
+		}
+		 
     }
+	
+	printf("\n");
 }
