@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <ftw.h>
 #include <pthread.h>
+#include <errno.h>
 
 #define SIZEOF_STRING 10000
 
@@ -35,12 +36,13 @@ void talk(char* fpath,char* type)
 {
 	pthread_mutex_lock(&socklock);
 	printf("talk\n");
+	sockfd=socket(AF_INET,SOCK_STREAM,0);
 	fflush(stdout);
 	char * sendline = malloc(SIZEOF_STRING);
  
     	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
 	{
-		printf("ERROR : Failed to connect to server\n");
+		printf("ERROR : Failed to connect to server [%s]\n",strerror(errno));
 		pthread_mutex_unlock(&socklock);
 		exit(EXIT_FAILURE);
 	}
@@ -68,20 +70,14 @@ void talk(char* fpath,char* type)
 
 
 	fclose(fp);
-	
-
 	char * str_file = malloc(sizeof(char) * (i + 1));
-	
 	FILE * fp1 = fopen(filename1, "r");
-	
 	if(fp1 == NULL)
 	{
 		pthread_mutex_unlock(&socklock);
 		exit(1);
 	}
-
 	c = getc(fp1);
-	
 	i=0;
 	while (c != EOF)
 	{
@@ -98,7 +94,6 @@ void talk(char* fpath,char* type)
 		free(filename1);
 	}	
 	
-	
 	str_file[i] = '\0';	
 	
 	int sentn = htonl(file_count);
@@ -113,7 +108,6 @@ void talk(char* fpath,char* type)
 	int index1 = 0;
 	int index2 = 0;
 
-	
 	for(j = 0; j < file_count; j++)
     	{
 		//sleep(1);
@@ -131,6 +125,7 @@ void talk(char* fpath,char* type)
 	//read(sockfd,recvline,100);    
 	printf("\nFile Sent\n");
 	pthread_mutex_unlock(&socklock);
+	return;
 }
 
 int isCSV(const char* name)
@@ -185,7 +180,6 @@ int main(int argc,char **argv)
 	strcpy(in_dir,"./\0");
 	type_global=malloc(10);
 	strcpy(type_global,"int\0");
-	sockfd=socket(AF_INET,SOCK_STREAM,0);
     	bzero(&servaddr,sizeof servaddr);
  
     	port = atoi(argv[2]);
