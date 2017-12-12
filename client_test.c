@@ -10,23 +10,112 @@
 #include <string.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <ftw.h>
+#include <pthread.h>
 
+#define SIZEOF_STRING 10000
+
+int sockfd;
+int port;
+struct sockaddr_in servaddr;
+int number_of_files=0;
+pthread_t* threads;
+int thread_index=0;
+pthread_mutex_t m;
+char* type_global;
+
+struct arg
+{
+	char* filePath;
+	char* sortType;
+};
+
+void talk(char* fpath,char* type)
+{
+
+}
+
+int isCSV(const char* name)
+{
+	char* temp=strdup(name);
+	char* ext=strrchr(temp,'.');
+	if(ext!=NULL&&strcmp(ext,".csv")==0)
+	{
+		if(temp!=NULL)
+		{
+			free(temp);
+		}
+		return 1;
+	}
+	if(temp!=NULL)
+	{
+		free(temp);
+	}
+	return 0;
+}
+
+void* threadify(void* arguments)
+{
+	struct arg* args=(struct arg*)arguments;
+	if(isCSV(args->filePath))
+	{
+		talk(args->filePath,args->sortType);
+	}
+}
+
+int search(const char* fpath,const struct stat* sb,int tflag)
+{
+	struct arg* args=malloc(sizeof(struct arg));
+	args->filePath=strdup(fpath);
+	args->sortType=strdup(type_global);
+	pthread_mutex_lock(&m);
+	pthread_create(&threads[thread_index++],NULL,&threadify,(void*)args);
+	pthread_mutex_unlock(&m);
+	return 0;
+}
+
+int count_files(const char* fpath,const struct stat* sb,int tflag)
+{
+	++number_of_files;
+	return 0;
+}
 
 int main(int argc,char **argv)
 {
-	int sockfd,n;
-	int sizeof_string = 10000;
-	char * sendline = malloc(sizeof_string);
-	struct sockaddr_in servaddr;
-    
+	int n;
+	char * sendline = malloc(SIZEOF_STRING);
+    	char* in_dir=malloc(1000);
+	strcpy(in_dir,"./\0");
+
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
     	bzero(&servaddr,sizeof servaddr);
  
-    	int port = atoi(argv[2]);
+    	port = atoi(argv[2]);
 	servaddr.sin_family=AF_INET;
 
     	servaddr.sin_port=htons(port);
     	inet_pton(AF_INET,argv[1],&(servaddr.sin_addr));
+
+	int x=ftw(in_dir,count_files,0);
+	number_of_files++;
+	threads=malloc(sizeof(pthread_t)*number_of_files);
+	if(threads=NULL)
+	{
+		fprintf(stderr,"ERROR : Too many expected threads\n");
+		free(in_dir);
+		free(threads);
+		free(sendline);
+		exit(1);
+	}
+
+	if(ftw(in_dir,search,0)==-1)
+	{
+		fprintf(stderr,"ERROR : Problem in file tree walk\n");
+		free(in_dir);
+		free(sendline);
+		free(threads);
+		exit(1);
+	}
     
     	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
 	{
@@ -34,7 +123,7 @@ int main(int argc,char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	char * filename1 = malloc(100);
+	char* filename1 = malloc(100);
 	
 	strncpy(filename1, argv[3], strlen(argv[3]));
 	filename1[strlen(argv[3]) + 1] = '\0';
