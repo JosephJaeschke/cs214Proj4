@@ -25,6 +25,7 @@ void write_test(FILE * fp, char * str) //test function to be replaced with merge
 
 void* rec(void* args)
 {	
+	printf("rec\n");
 	pthread_mutex_lock(&socklock);
 	char * str = malloc(10000);
    	int size = 0;
@@ -33,7 +34,7 @@ void* rec(void* args)
 	strcpy(recv,"hello");
 	if (read(comm_fd, &size, sizeof(size)) == 0) //get size lines of file
 	{
-		printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		printf("1[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 		free(str);
 		pthread_mutex_unlock(&socklock);
 		return "no";
@@ -50,13 +51,13 @@ void* rec(void* args)
 	}
 	if (read(comm_fd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
 	{
-		printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		printf("2[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 		free(str);
 		pthread_mutex_unlock(&socklock);
 		return "no";
 	}
 	write(comm_fd,"q",2);
-	FILE* out_file = fopen("files_sorted.csv", "w");
+	FILE* out_file = fopen("files_sorted.csv", "a");
 	char* file=malloc(size);
 	char* whole=malloc(fileSize);	
 	strcpy(recv,"hello");
@@ -68,7 +69,7 @@ void* rec(void* args)
 		bzero(str, 10000); 
        		if(read(comm_fd,str,10000) == 0) //go through each line of csv, and get the line
 		{
-			printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+			printf("3[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
  			comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
 			continue;
 		}
