@@ -19,9 +19,10 @@ int sockfd;
 int port;
 struct sockaddr_in servaddr;
 int number_of_files=0;
-pthread_t* threads;
+pthread_t threads[10000];
 int thread_index=0;
 pthread_mutex_t m;
+pthread_mutex_t socklock;
 char* type_global;
 
 struct arg
@@ -32,7 +33,104 @@ struct arg
 
 void talk(char* fpath,char* type)
 {
+	pthread_mutex_lock(&socklock);
+	printf("talk\n");
+	fflush(stdout);
+	char * sendline = malloc(SIZEOF_STRING);
+ 
+    	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
+	{
+		printf("ERROR : Failed to connect to server\n");
+		pthread_mutex_unlock(&socklock);
+		exit(EXIT_FAILURE);
+	}
 
+	char* filename1 = malloc(100);
+	
+	strncpy(filename1, fpath, strlen(fpath));
+	filename1[strlen(fpath) + 1] = '\0';
+	printf("%s\n", filename1);
+	FILE * fp = fopen(filename1, "r");
+	int row_position = 0;
+	int j = 0;
+	int file_count = 0;
+	int i = 0;
+	char c = getc(fp);
+	while (c != EOF)
+	{
+		if(c == '\n')
+		{
+			file_count++;
+		}
+		i++;
+		c = getc(fp);
+    	}
+
+
+	fclose(fp);
+	
+
+	char * str_file = malloc(sizeof(char) * (i + 1));
+	
+	FILE * fp1 = fopen(filename1, "r");
+	
+	if(fp1 == NULL)
+	{
+		pthread_mutex_unlock(&socklock);
+		exit(1);
+	}
+
+	c = getc(fp1);
+	
+	i=0;
+	while (c != EOF)
+	{
+		str_file[i] = c;
+		i++;
+		c = getc(fp1);
+   	}
+	if(fp1 != NULL)
+	{
+		fclose(fp1);	
+	}
+	if(filename1 != NULL)
+	{
+		free(filename1);
+	}	
+	
+	
+	str_file[i] = '\0';	
+	
+	int sentn = htonl(file_count);
+	char * recvline = malloc(100);
+	//read(sockfd,recvline,100);
+	printf("first write -> %d\n",ntohl(sentn));
+	write(sockfd,&sentn,sizeof(sentn));   	
+	read(sockfd,recvline,100);
+	printf("second write -> %d\n",i);
+	write(sockfd,&i,sizeof(i));
+	read(sockfd,recvline,100);
+	int index1 = 0;
+	int index2 = 0;
+
+	
+	for(j = 0; j < file_count; j++)
+    	{
+		//sleep(1);
+		bzero(sendline, 10000);
+		while(str_file[index2] != '\n')
+		{
+			index2++;
+		}
+		index2++;
+		strncpy(sendline,str_file+index1, index2 - index1);
+		write(sockfd,sendline,strlen(sendline)+1);
+		index1 = index2; 
+		read(sockfd,recvline,100);
+	}
+	//read(sockfd,recvline,100);    
+	printf("\nFile Sent\n");
+	pthread_mutex_unlock(&socklock);
 }
 
 int isCSV(const char* name)
@@ -61,6 +159,7 @@ void* threadify(void* arguments)
 	{
 		talk(args->filePath,args->sortType);
 	}
+	return "";
 }
 
 int search(const char* fpath,const struct stat* sb,int tflag)
@@ -76,17 +175,16 @@ int search(const char* fpath,const struct stat* sb,int tflag)
 
 int count_files(const char* fpath,const struct stat* sb,int tflag)
 {
-	++number_of_files;
+	number_of_files++;
 	return 0;
 }
 
 int main(int argc,char **argv)
 {
-	int n;
-	char * sendline = malloc(SIZEOF_STRING);
     	char* in_dir=malloc(1000);
 	strcpy(in_dir,"./\0");
-
+	type_global=malloc(10);
+	strcpy(type_global,"int\0");
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
     	bzero(&servaddr,sizeof servaddr);
  
@@ -98,25 +196,29 @@ int main(int argc,char **argv)
 
 	int x=ftw(in_dir,count_files,0);
 	number_of_files++;
-	threads=malloc(sizeof(pthread_t)*number_of_files);
-	if(threads=NULL)
-	{
-		fprintf(stderr,"ERROR : Too many expected threads\n");
-		free(in_dir);
-		free(threads);
-		free(sendline);
-		exit(1);
-	}
-
+	printf("Found %d files\n",number_of_files);
+//	threads=malloc(sizeof(pthread_t)*number_of_files);
+	//if(threads=NULL)
+	//{
+	//	fprintf(stderr,"ERROR : Too many expected threads\n");
+	//	free(in_dir);
+	//	free(threads);
+	//	exit(1);
+	//}
+	fflush(stdout);
 	if(ftw(in_dir,search,0)==-1)
 	{
 		fprintf(stderr,"ERROR : Problem in file tree walk\n");
 		free(in_dir);
-		free(sendline);
-		free(threads);
 		exit(1);
 	}
-    
+
+	int a;
+	for(a=0;a<thread_index;a++)
+	{
+		pthread_join(threads[a],NULL);
+	}
+    /*
     	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
 	{
 		printf("ERROR : Failed to connect to server\n");
@@ -194,18 +296,19 @@ int main(int argc,char **argv)
 	for(j = 0; j < file_count; j++)
     	{
 		//sleep(1);
-		bzero(sendline, 10000);
+		//bzero(sendline, 10000);
 		while(str_file[index2] != '\n')
 		{
 			index2++;
 		}
 		index2++;
-		strncpy(sendline,str_file+index1, index2 - index1);
-		write(sockfd,sendline,strlen(sendline)+1);
+		//strncpy(sendline,str_file+index1, index2 - index1);
+		//write(sockfd,sendline,strlen(sendline)+1);
 		index1 = index2; 
 		read(sockfd,recvline,100);
 	}
 	//read(sockfd,recvline,100);    
 	printf("\nFile Sent\n");
+	*/
 	return 0; 
 }

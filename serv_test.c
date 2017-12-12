@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 pthread_mutex_t m;
+pthread_mutex_t socklock;
 pthread_t* threadIDs;
 int threadIndex=0;
 struct sockaddr_in servaddr; //init stuff
@@ -24,6 +25,7 @@ void write_test(FILE * fp, char * str) //test function to be replaced with merge
 
 void* rec(void* args)
 {	
+	pthread_mutex_lock(&socklock);
 	char * str = malloc(10000);
    	int size = 0;
 	int fileSize=0;
@@ -33,6 +35,7 @@ void* rec(void* args)
 	{
 		printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 		free(str);
+		pthread_mutex_unlock(&socklock);
 		return "no";
 	}
 	write(comm_fd,"q",2);
@@ -42,12 +45,14 @@ void* rec(void* args)
 		//this is not a file
 		printf("dump\n");
 		//do the dump thing and send over sorted of all files
+		pthread_mutex_unlock(&socklock);
 		return "yo";
 	}
 	if (read(comm_fd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
 	{
 		printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 		free(str);
+		pthread_mutex_unlock(&socklock);
 		return "no";
 	}
 	write(comm_fd,"q",2);
@@ -80,6 +85,7 @@ void* rec(void* args)
 	free(str);
 	free(file);
 	free(whole);
+	pthread_mutex_unlock(&socklock);
 	return "no";
 }
 
@@ -123,8 +129,11 @@ int main(int argc, char** argv)
 
     	while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
 	{
+		printf("got one\n");
 		void* state;
+		pthread_mutex_lock(&m);
 		pthread_t index=threadIDs[threadIndex++];
+		pthread_mutex_unlock(&m);
 		pthread_create(&index,NULL,&rec,NULL);
 		pthread_join(index,&state);
 		char* d=(char*)state;
