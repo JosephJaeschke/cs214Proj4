@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <errno.h>
+#include <arpa/inet.h>
 #include "sorter_server.h"
 
 pthread_mutex_t m;
@@ -462,8 +463,6 @@ void doTheSort()
 		big+=strlen(movies[j].string_row);
 	}
 	int len=0;
-	printf("%s",movies[139].string_row);
-	fflush(stdout);
 	char* sorted_output=malloc(big);
 	for(j = 0; j < file_count; j++)
 	{
@@ -476,7 +475,7 @@ void doTheSort()
 	//fclose(dump);
 	
 //============================================================ SEND FILE BACK
-	printf("talk\n");
+	//printf("talk\n");
 	//comm_fd=socket(AF_INET,SOCK_STREAM,0);
 	char * sendline = malloc(10000);
  
@@ -490,15 +489,15 @@ void doTheSort()
 	char * recvline = malloc(100);
 	char* resp=malloc(2);
 	//read(sockfd,recvline,100);
-	printf("first write -> %d\n",sentn);
+	//printf("first write -> %d\n",sentn);
 	write(comm_fd,&sentn,sizeof(sentn));   	
 	read(comm_fd,resp,2);
-	printf("second write -> %d\n",i);
+	//printf("second write -> %d\n",i);
 	write(comm_fd,&big,sizeof(big));
 	read(comm_fd,resp,2);
 	int index1 = 0;
 	int index2 = 0;
-	printf("start sending file\n");
+	//printf("start sending file\n");
 
 	for(j = 0; j < file_count; j++)
     	{
@@ -514,7 +513,7 @@ void doTheSort()
 		read(comm_fd,recvline,100);
 	}
 	//read(sockfd,recvline,100);    
-	printf("\nFile Sent\n");
+	//printf("\nFile Sent\n");
 	return;
 //============================================================ SEND FILE BACK
 
@@ -551,7 +550,7 @@ void write_test(FILE * fp, char * str) //test function to be replaced with merge
 
 void* rec(void* args)
 {	
-	printf("rec\n");
+	//printf("rec\n");
 	pthread_mutex_lock(&socklock);
 	char * str = malloc(10000);
    	int size = 0;
@@ -560,28 +559,28 @@ void* rec(void* args)
 	strcpy(recv,"hello");
 	if (read(comm_fd, &size, sizeof(size)) == 0) //get size lines of file
 	{
-		printf("1[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		//printf("1[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 		free(str);
 		pthread_mutex_unlock(&socklock);
 		return "no";
 	}
-	printf("-- %d\n",ntohl(size));
+	//printf("-- %d\n",ntohl(size));
 	write(comm_fd,"q",2);
-	printf("[+] Connect to client %d\n", listen_fd); //to be changed to ip?
+	//printf("[+] Connect to client %d\n", listen_fd); //to be changed to ip?
 	if(ntohl(size)==758185984)
 	{
 		//this is not a file
-		printf("dump\n");
+		//printf("dump\n");
 		//do the dump thing and send over sorted of all files
 		pthread_mutex_unlock(&socklock);
 		doTheSort();
-		printf("dd\n");
+		//printf("dd\n");
 		header='0';
 		return "yo";
 	}
 	if (read(comm_fd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
 	{
-		printf("2[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		//printf("2[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 		free(str);
 		pthread_mutex_unlock(&socklock);
 		return "no";
@@ -599,7 +598,7 @@ void* rec(void* args)
 		bzero(str, 10000); 
        		if(read(comm_fd,str,10000) == 0) //go through each line of csv, and get the line
 		{
-			printf("3[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+			//printf("3[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
  			comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
 			continue;
 		}
@@ -640,7 +639,7 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-
+	printf("Received connections from: ");
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htons(INADDR_ANY);
 	servaddr.sin_port = htons(0); //set to a random port which isn't being used
@@ -665,10 +664,18 @@ int main(int argc, char** argv)
 		fclose(fp);
 		token=malloc(30);
 
+		//struct sockaddr* client_addr;
+
 		comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
+		
+		//struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&client_addr;
+		//struct in_addr ipAddr = pV4Addr->sin_addr;
+		//char str[INET_ADDRSTRLEN];
+		//inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
+//		printf("%s,",client_addr->sa_data);
 		if (read(comm_fd, token, sizeof(token)) == 0) //get size lines of file
 		{
-			printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+			//printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 			free(token);
 			pthread_mutex_unlock(&socklock);
 			exit(EXIT_FAILURE);
@@ -677,7 +684,7 @@ int main(int argc, char** argv)
 
 		while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
 		{
-			printf("got one\n");
+			//printf("got one\n");
 			void* ret;
 			pthread_mutex_lock(&m);
 			pthread_t index=threadIDs[threadIndex++];

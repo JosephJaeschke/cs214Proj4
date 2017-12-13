@@ -178,10 +178,80 @@ int main(int argc,char **argv)
     	char* in_dir=malloc(1000); //the -d parameter
 	strcpy(in_dir,"./\0");
 	type_global=malloc(30); //the -c parameter
-	strcpy(type_global,"color\0");
-	char* out_dir=malloc(100); //the -o paramter
-    	int port = atoi(argv[2]); //the -p paramter
-	char* host=argv[1]; //the -h parameter
+	strcpy(type_global,"none\0");
+	char* out_dir=malloc(1000); //the -o paramter
+    	int port = -1; //the -p paramter
+	char* host=malloc(1000); //the -h parameter
+	strcpy(host,"bad\0");
+	if(argc==2&&strcmp(argv[2],"-h")==0)
+	{
+		printf("1ERROR: Incorrect format\n");
+		printf("./sorter_client -c <column> -h <host name> -p <port>\nOptional: -o <output dir> -d <input dir>");
+		return 0;
+	}
+	if(argc!=7&&argc!=9&&argc!=11)
+	{
+		printf("2ERROR: Incorrect number of arguments\n");
+		printf("./sorter_client -c <column> -h <host name> -p <port>\nOptional: -o <output dir> -d <input dir>");
+		return 0;
+	}
+	int i;
+	for(i=0;i<argc;i++)
+	{
+		if(strcmp(argv[i],"-c") == 0)
+		{
+			if((i % 2) == 0)
+			{
+				fprintf(stderr, "<3ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				return 0;
+			}
+			strcpy(type_global, argv[i+1]);
+		}
+		if(strcmp(argv[i], "-d") == 0)
+		{
+			if((i % 2) == 0)
+			{
+				fprintf(stderr, "<4ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				return 0;
+			}
+		strcpy(in_dir, argv[i+1]);
+		}
+		if(strcmp(argv[i], "-o") == 0)
+		{
+			if((i % 2) == 0)
+			{
+				fprintf(stderr, "<5ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				return 0;
+			}
+			strcpy(out_dir, argv[i+1]);
+		}
+		if(strcmp(argv[i], "-p") == 0)
+		{
+			if((i % 2) == 0)
+			{
+				fprintf(stderr, "<6ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				return 0;
+			}
+			port=strtol(argv[i+1],NULL,10);
+		}
+		if(strcmp(argv[i], "-h") == 0)
+		{
+			if((i % 2) == 0)
+			{
+				fprintf(stderr, "<7ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				return 0;
+			}
+			strcpy(out_dir, argv[i+1]);
+		}
+	
+
+
+	}
+	if(strcmp(type_global,"none\0")==0||port==-1||strcmp(host,"bad\0"))
+	{
+		printf("ERROR: Must specify a cloumn, a port, and a host\n");
+		return 0;
+	}
 
 	char* junk=malloc(2);
 
@@ -207,7 +277,7 @@ int main(int argc,char **argv)
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
 	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
 	{
-		printf("9ERROR : Failed to connect to server [%s]\n",strerror(errno));
+		printf("ERROR : Failed to connect to server [%s]\n",strerror(errno));
 		pthread_mutex_unlock(&socklock);
 		exit(EXIT_FAILURE);
 	}
