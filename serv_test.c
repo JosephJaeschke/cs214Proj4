@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <ctype.h>
+#include <errno.h>
 #include "sorter_server.h"
 
 pthread_mutex_t m;
@@ -452,25 +453,75 @@ void doTheSort()
 	}
 	//printf("%d \n", type);
 	//mergesort(movies,1,file_count-1,file_count);
-	printf("before call me\n");
-	fflush(stdout);
 	callMe(file_count,type,movies,help);
 	//printf("heyo\n");
 	//printf("\n");
-	char * filename = malloc(1000);
-	
-	char * tempp = malloc(1000);
-	FILE* file_ptr = fopen("done.csv", "w");
+	int big=0;
+	for(j=0;j<file_count;j++)
+	{
+		big+=strlen(movies[j].string_row);
+	}
+	int len=0;
+	printf("%s",movies[139].string_row);
+	fflush(stdout);
+	char* sorted_output=malloc(big);
 	for(j = 0; j < file_count; j++)
 	{
-		fprintf(file_ptr, "%s", movies[j].string_row);
+		//printf("j:%d\n",j);
+		len+=sprintf(sorted_output+len,"%s",movies[j].string_row);
 		//printf("[%s]\n", movies[j].data);
 	}
-	fclose(file_ptr);
-	//printf("\n\n");
-	free(filename);
-	free(tempp);
+	FILE* dump=fopen("server_dump.csv","w");
+	fprintf(dump,"%s",sorted_output);
+	fclose(dump);
 	
+//============================================================ SEND FILE BACK
+	printf("talk\n");
+	//comm_fd=socket(AF_INET,SOCK_STREAM,0);
+	char * sendline = malloc(10000);
+ 
+	
+	row_position = 0;
+	j = 0;
+
+	free(str_file);
+	
+	int sentn = htonl(file_count);
+	char * recvline = malloc(100);
+	char* resp=malloc(2);
+	//read(sockfd,recvline,100);
+	printf("first write -> %d\n",sentn);
+	write(comm_fd,&sentn,sizeof(sentn));   	
+	read(comm_fd,resp,2);
+	printf("second write -> %d\n",i);
+	write(comm_fd,&big,sizeof(big));
+	read(comm_fd,resp,2);
+	int index1 = 0;
+	int index2 = 0;
+	printf("start sending file\n");
+
+	for(j = 0; j < file_count; j++)
+    	{
+		bzero(sendline, 10000);
+		while(sorted_output[index2] != '\n')
+		{
+			index2++;
+		}
+		index2++;
+		strncpy(sendline,sorted_output+index1, index2 - index1);
+		write(comm_fd,sendline,strlen(sendline)+1);
+		index1 = index2; 
+		read(comm_fd,recvline,100);
+	}
+	//read(sockfd,recvline,100);    
+	printf("\nFile Sent\n");
+	pthread_mutex_unlock(&socklock);
+	return;
+//============================================================ SEND FILE BACK
+
+
+
+
 
 	for(j = 0; j < file_count; j++)
 	{
@@ -487,7 +538,7 @@ void doTheSort()
 	free(help);
 	free(token);
 	free(str_file);
-
+	free(sorted_output);
 	return;
 
 }
@@ -515,6 +566,7 @@ void* rec(void* args)
 		pthread_mutex_unlock(&socklock);
 		return "no";
 	}
+	printf("-- %d\n",ntohl(size));
 	write(comm_fd,"q",2);
 	printf("[+] Connect to client %d\n", listen_fd); //to be changed to ip?
 	if(ntohl(size)==758185984)
@@ -524,6 +576,8 @@ void* rec(void* args)
 		//do the dump thing and send over sorted of all files
 		pthread_mutex_unlock(&socklock);
 		doTheSort();
+		printf("dd\n");
+		header='0';
 		return "yo";
 	}
 	if (read(comm_fd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
@@ -535,8 +589,8 @@ void* rec(void* args)
 	}
 	write(comm_fd,"q",2);
 	FILE* out_file = fopen("files_sorted.txt", "a");
-	char* file=malloc(size);
-	char* whole=malloc(fileSize);	
+	char* file=malloc(ntohl(size));
+	char* whole=malloc(ntohl(fileSize));	
 	strcpy(recv,"hello");
 	int j = 0;
 	int len=0;

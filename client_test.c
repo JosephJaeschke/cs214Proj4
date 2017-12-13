@@ -236,8 +236,66 @@ int main(int argc,char **argv)
 		pthread_mutex_unlock(&socklock);
 		exit(EXIT_FAILURE);
 	}
-
+	char* recv=malloc(100);
 	write(sockfd,"-1",2);
+	read(sockfd,recv,2);
 
+//==================================================================GET SORTED FILE
+	printf("rec\n");
+	char * str = malloc(10000);
+   	int size = 0;
+	int fileSize=0;
+
+	strcpy(recv,"hello");
+	
+	if (read(sockfd, &size, sizeof(size)) == 0) //get size lines of file
+	{
+//		printf("1[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		free(str);
+		exit(EXIT_FAILURE);
+	}
+	printf("first read -> %d\n",size);
+	int q=write(sockfd,"q",2);
+	//printf("[+] Connect to client %d\n", listen_fd); //to be changed to ip?
+	if (read(sockfd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
+	{
+		//printf("2[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		free(str);
+		exit(EXIT_FAILURE);
+	}
+	printf("second read -> %d\n",fileSize);
+	write(sockfd,"q",2);
+	char* file=malloc(ntohl(size));
+	char* whole=malloc(ntohl(fileSize));	
+	strcpy(recv,"hello");
+	int j = 0;
+	int len=0;
+	printf("start getting file\n");
+	for (j = 0; j < ntohl(size); j++)
+    	{
+ 		
+		bzero(str, 10000); 
+       		if(read(sockfd,str,10000) == 0) //go through each line of csv, and get the line
+		{
+			//printf("3[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+ 			//sockfd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
+			continue;
+		}
+		else
+		{
+			len+=sprintf(whole+len,"%s",str);
+			write(sockfd, recv, strlen(recv)+1); //send back a signal to show that it's done recieving data(lets it be in order)	
+		}
+		 
+    	}
+	free(str);
+	free(file);
+//==================================================================GET SORTED FILE
+	char* fname=malloc(100);
+	sprintf(fname,"AllFiles-sorted-%s.csv",type_global);
+	FILE* done=fopen(fname,"w");
+	fprintf(done,"%s",whole);
+	free(whole);
+	fclose(done);
 	return 0; 
 }
