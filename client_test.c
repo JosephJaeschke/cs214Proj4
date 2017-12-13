@@ -185,13 +185,12 @@ int main(int argc,char **argv)
 	strcpy(host,"bad\0");
 	if(argc==2&&strcmp(argv[2],"-h")==0)
 	{
-		printf("1ERROR: Incorrect format\n");
 		printf("./sorter_client -c <column> -h <host name> -p <port>\nOptional: -o <output dir> -d <input dir>");
 		return 0;
 	}
 	if(argc!=7&&argc!=9&&argc!=11)
 	{
-		printf("2ERROR: Incorrect number of arguments\n");
+		printf("ERROR: Incorrect number of arguments\n");
 		printf("./sorter_client -c <column> -h <host name> -p <port>\nOptional: -o <output dir> -d <input dir>");
 		return 0;
 	}
@@ -202,7 +201,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<3ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
 				return 0;
 			}
 			strcpy(type_global, argv[i+1]);
@@ -211,7 +210,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<4ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
 				return 0;
 			}
 		strcpy(in_dir, argv[i+1]);
@@ -220,7 +219,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<5ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
 				return 0;
 			}
 			strcpy(out_dir, argv[i+1]);
@@ -229,7 +228,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<6ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
 				return 0;
 			}
 			port=strtol(argv[i+1],NULL,10);
@@ -238,7 +237,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<7ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
 				return 0;
 			}
 			strcpy(out_dir, argv[i+1]);

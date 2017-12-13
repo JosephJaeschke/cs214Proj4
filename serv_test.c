@@ -624,6 +624,24 @@ void* rec(void* args)
 
 int main(int argc, char** argv)
 {
+	if(argc==2&&strcmp(argv[1],"-h")==0)
+	{
+		printf("./sorter_server -p <port>\n");
+		return 0;
+	}
+	if(argc!=3)
+	{
+		printf("ERROR: Incorrect number of arguments\n");
+		printf("./sorter_server -p <port>\n");
+		return 0;
+	}
+	if(strcmp(argv[1],"-p")!=0)
+	{
+		printf("ERROR: Incorrect number of arguments\n");
+		printf("./sorter_server -p <port>\n");
+		return 0;
+	}
+
 	threadIDs=malloc(sizeof(pthread_t)*5); //change 5 to how many files  
  	char state='0';
 	bzero( &servaddr, sizeof(servaddr)); //zero at addresse
@@ -640,22 +658,23 @@ int main(int argc, char** argv)
 	}
 
 	printf("Received connections from: ");
+	fflush(stdout);
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htons(INADDR_ANY);
-	servaddr.sin_port = htons(0); //set to a random port which isn't being used
+	servaddr.sin_port = htons(strtol(argv[2],NULL,10)); //set to a random port which isn't being used
 	while(1)
 	{
 		bind(listen_fd, (struct sockaddr *) &servaddr, sizeof(servaddr)); //bind program to that port
 		
 		socklen_t len = sizeof(servaddr);
 		
-		if (getsockname(listen_fd, (struct sockaddr *)&servaddr, &len) == -1)
-		{
-			perror("getsockname");
-			return 0;
-		} //checl of socket binded correctly
-
-		printf("Running On Port Number: %d\n", ntohs(servaddr.sin_port)); //get port
+		//if (getsockname(listen_fd, (struct sockaddr *)&servaddr, &len) == -1)
+	//	{
+	//		perror("getsockname");
+	//		return 0;
+	//	} //checl of socket binded correctly
+//
+//		printf("Running On Port Number: %d\n", ntohs(servaddr.sin_port)); //get port
 
 		listen(listen_fd, 10); //allow for max 10 connections (not sure how it changes threads)
 		
@@ -664,15 +683,21 @@ int main(int argc, char** argv)
 		fclose(fp);
 		token=malloc(30);
 
-		//struct sockaddr* client_addr;
-
-		comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
-		
+		struct sockaddr* client_addr;
+		struct sockaddr* addr;
+		int sizeaddr=sizeof(addr);
+		comm_fd = accept(listen_fd, (struct sockaddr*)&addr, &sizeaddr);
+		struct sockaddr_in* sai=(struct sockaddr_in*)&addr;
 		//struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&client_addr;
 		//struct in_addr ipAddr = pV4Addr->sin_addr;
 		//char str[INET_ADDRSTRLEN];
 		//inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
 //		printf("%s,",client_addr->sa_data);
+		char *ip = inet_ntoa(sai->sin_addr);
+//		printf("fsf\n");
+//		fflush(stdout);
+		printf("%s,",ip);
+		fflush(stdout);
 		if (read(comm_fd, token, sizeof(token)) == 0) //get size lines of file
 		{
 			//printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
