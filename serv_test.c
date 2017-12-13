@@ -471,9 +471,9 @@ void doTheSort()
 		len+=sprintf(sorted_output+len,"%s",movies[j].string_row);
 		//printf("[%s]\n", movies[j].data);
 	}
-	FILE* dump=fopen("server_dump.csv","w");
-	fprintf(dump,"%s",sorted_output);
-	fclose(dump);
+	//FILE* dump=fopen("server_dump.csv","w");
+	//fprintf(dump,"%s",sorted_output);
+	//fclose(dump);
 	
 //============================================================ SEND FILE BACK
 	printf("talk\n");
@@ -515,7 +515,6 @@ void doTheSort()
 	}
 	//read(sockfd,recvline,100);    
 	printf("\nFile Sent\n");
-	pthread_mutex_unlock(&socklock);
 	return;
 //============================================================ SEND FILE BACK
 
@@ -627,13 +626,12 @@ void* rec(void* args)
 int main(int argc, char** argv)
 {
 	threadIDs=malloc(sizeof(pthread_t)*5); //change 5 to how many files  
- 
- 
-    	bzero( &servaddr, sizeof(servaddr)); //zero at addresse
- 
-    	//int port = atoi(argv[1]); 
+ 	char state='0';
+	bzero( &servaddr, sizeof(servaddr)); //zero at addresse
+	 
+	//int port = atoi(argv[1]); 
 	
-	
+		
 	if((listen_fd=socket(AF_INET,SOCK_STREAM,0))<=0) //check if sockets being used
 	{
 		// print error message with perror()
@@ -646,46 +644,65 @@ int main(int argc, char** argv)
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htons(INADDR_ANY);
 	servaddr.sin_port = htons(0); //set to a random port which isn't being used
- 
-    	bind(listen_fd, (struct sockaddr *) &servaddr, sizeof(servaddr)); //bind program to that port
- 	
-	socklen_t len = sizeof(servaddr);
-	
-	if (getsockname(listen_fd, (struct sockaddr *)&servaddr, &len) == -1)
+	while(1)
 	{
-		perror("getsockname");
-		return 0;
-	} //checl of socket binded correctly
+		bind(listen_fd, (struct sockaddr *) &servaddr, sizeof(servaddr)); //bind program to that port
+		
+		socklen_t len = sizeof(servaddr);
+		
+		if (getsockname(listen_fd, (struct sockaddr *)&servaddr, &len) == -1)
+		{
+			perror("getsockname");
+			return 0;
+		} //checl of socket binded correctly
 
-	printf("Running On Port Number: %d\n", ntohs(servaddr.sin_port)); //get port
+		printf("Running On Port Number: %d\n", ntohs(servaddr.sin_port)); //get port
 
-  	listen(listen_fd, 10); //allow for max 10 connections (not sure how it changes threads)
-	
-	FILE* fp=fopen("files_sorted.txt","w");
-	fflush(fp);
-	fclose(fp);
-	token=malloc(30);
+		listen(listen_fd, 10); //allow for max 10 connections (not sure how it changes threads)
+		
+		FILE* fp=fopen("files_sorted.txt","w");
+		fflush(fp);
+		fclose(fp);
+		token=malloc(30);
 
-	comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
- 	if (read(comm_fd, token, sizeof(token)) == 0) //get size lines of file
-	{
-		printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
-		free(token);
-		pthread_mutex_unlock(&socklock);
-		exit(EXIT_FAILURE);
-	}
-	write(comm_fd,"q",2);
+		comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
+		if (read(comm_fd, token, sizeof(token)) == 0) //get size lines of file
+		{
+			printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+			free(token);
+			pthread_mutex_unlock(&socklock);
+			exit(EXIT_FAILURE);
+		}
+		write(comm_fd,"q",2);
 
-    	while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
-	{
-		printf("got one\n");
-		pthread_mutex_lock(&m);
-		pthread_t index=threadIDs[threadIndex++];
-		pthread_mutex_unlock(&m);
-		pthread_create(&index,NULL,&rec,NULL);
-		pthread_join(index,NULL);
-	}
-	
+		while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
+		{
+			printf("got one\n");
+			void* ret;
+			pthread_mutex_lock(&m);
+			pthread_t index=threadIDs[threadIndex++];
+			pthread_mutex_unlock(&m);
+			pthread_create(&index,NULL,&rec,NULL);
+			pthread_join(index,&ret);
+			char* val=(char*)ret;
+			if(val[0]=='y')
+			{
+	/////			state='1';
+				break;
+				/*
+				if (read(comm_fd, token, sizeof(token)) == 0) //get size lines of file
+				{
+					printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+					free(token);
+					pthread_mutex_unlock(&socklock);
+					exit(EXIT_FAILURE);
+				}
+				write(comm_fd,"q",2);
+				*/
+			}
+		}
+
+	}	
 	printf("\n");
 	
 	close(listen_fd);
