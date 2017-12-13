@@ -17,7 +17,6 @@
 #define SIZEOF_STRING 10000
 
 int sockfd;
-int port;
 struct sockaddr_in servaddr;
 int number_of_files=0;
 pthread_t threads[10000];
@@ -176,17 +175,22 @@ int count_files(const char* fpath,const struct stat* sb,int tflag)
 
 int main(int argc,char **argv)
 {
-    	char* in_dir=malloc(1000);
+    	char* in_dir=malloc(1000); //the -d parameter
 	strcpy(in_dir,"./\0");
-	type_global=malloc(10);
-	strcpy(type_global,"int\0");
-    	bzero(&servaddr,sizeof servaddr);
+	type_global=malloc(30); //the -c parameter
+	strcpy(type_global,"color\0");
+	char* out_dir=malloc(100); //the -o paramter
+    	int port = atoi(argv[2]); //the -p paramter
+	char* host=argv[1]; //the -h parameter
+
+	char* junk=malloc(2);
+
+	bzero(&servaddr,sizeof servaddr);
  
-    	port = atoi(argv[2]);
 	servaddr.sin_family=AF_INET;
 
     	servaddr.sin_port=htons(port);
-    	inet_pton(AF_INET,argv[1],&(servaddr.sin_addr));
+    	inet_pton(AF_INET,host,&(servaddr.sin_addr));
 
 	int x=ftw(in_dir,count_files,0);
 	number_of_files++;
@@ -199,7 +203,19 @@ int main(int argc,char **argv)
 	//	free(threads);
 	//	exit(1);
 	//}
-	fflush(stdout);
+
+	sockfd=socket(AF_INET,SOCK_STREAM,0);
+	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
+	{
+		printf("9ERROR : Failed to connect to server [%s]\n",strerror(errno));
+		pthread_mutex_unlock(&socklock);
+		exit(EXIT_FAILURE);
+	}
+	printf("bepfre write\n");
+	write(sockfd,type_global,sizeof(type_global));
+	read(sockfd,junk,2);
+
+
 	if(ftw(in_dir,search,0)==-1)
 	{
 		fprintf(stderr,"ERROR : Problem in file tree walk\n");
@@ -212,97 +228,16 @@ int main(int argc,char **argv)
 	{
 		pthread_join(threads[a],NULL);
 	}
-    /*
-    	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
+
+	sockfd=socket(AF_INET,SOCK_STREAM,0);
+	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
 	{
-		printf("ERROR : Failed to connect to server\n");
+		printf("9ERROR : Failed to connect to server [%s]\n",strerror(errno));
+		pthread_mutex_unlock(&socklock);
 		exit(EXIT_FAILURE);
 	}
 
-	char* filename1 = malloc(100);
-	
-	strncpy(filename1, argv[3], strlen(argv[3]));
-	filename1[strlen(argv[3]) + 1] = '\0';
-	printf("%s\n", filename1);
-	FILE * fp = fopen(filename1, "r");
-	int row_position = 0;
-	int j = 0;
-	int file_count = 0;
-	int i = 0;
-	char c = getc(fp);
-	while (c != EOF)
-	{
-		if(c == '\n')
-		{
-			file_count++;
-		}
-		i++;
-		c = getc(fp);
-    	}
+	write(sockfd,"-1",2);
 
-
-	fclose(fp);
-	
-
-	char * str_file = malloc(sizeof(char) * (i + 1));
-	
-	FILE * fp1 = fopen(filename1, "r");
-	
-	if(fp1 == NULL)
-	{
-		exit(1);
-	}
-
-	c = getc(fp1);
-	
-	i=0;
-	while (c != EOF)
-	{
-		str_file[i] = c;
-		i++;
-		c = getc(fp1);
-   	}
-	if(fp1 != NULL)
-	{
-		fclose(fp1);	
-	}
-	if(filename1 != NULL)
-	{
-		free(filename1);
-	}	
-	
-	
-	str_file[i] = '\0';	
-	
-	int sentn = htonl(file_count);
-	char * recvline = malloc(100);
-	//read(sockfd,recvline,100);
-	printf("first write -> %d\n",ntohl(sentn));
-	write(sockfd,&sentn,sizeof(sentn));   	
-	read(sockfd,recvline,100);
-	printf("second write -> %d\n",i);
-	write(sockfd,&i,sizeof(i));
-	read(sockfd,recvline,100);
-	int index1 = 0;
-	int index2 = 0;
-
-	
-	for(j = 0; j < file_count; j++)
-    	{
-		//sleep(1);
-		//bzero(sendline, 10000);
-		while(str_file[index2] != '\n')
-		{
-			index2++;
-		}
-		index2++;
-		//strncpy(sendline,str_file+index1, index2 - index1);
-		//write(sockfd,sendline,strlen(sendline)+1);
-		index1 = index2; 
-		read(sockfd,recvline,100);
-	}
-	//read(sockfd,recvline,100);    
-	printf("\nFile Sent\n");
-	*/
 	return 0; 
 }

@@ -16,6 +16,12 @@ int threadIndex=0;
 struct sockaddr_in servaddr; //init stuff
 int listen_fd, comm_fd;
 
+void doTheSort()
+{
+	FILE* fp=fopen("files_sorted.txt","r");
+
+}
+
 void write_test(FILE * fp, char * str) //test function to be replaced with merge/etc
 {
 	//printf("%s", str);
@@ -41,12 +47,13 @@ void* rec(void* args)
 	}
 	write(comm_fd,"q",2);
 	printf("[+] Connect to client %d\n", listen_fd); //to be changed to ip?
-	if(ntohl(size)<0)
+	if(ntohl(size)==758185984)
 	{
 		//this is not a file
 		printf("dump\n");
 		//do the dump thing and send over sorted of all files
 		pthread_mutex_unlock(&socklock);
+		doTheSort();
 		return "yo";
 	}
 	if (read(comm_fd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
@@ -57,7 +64,7 @@ void* rec(void* args)
 		return "no";
 	}
 	write(comm_fd,"q",2);
-	FILE* out_file = fopen("files_sorted.csv", "a");
+	FILE* out_file = fopen("files_sorted.txt", "a");
 	char* file=malloc(size);
 	char* whole=malloc(fileSize);	
 	strcpy(recv,"hello");
@@ -75,8 +82,10 @@ void* rec(void* args)
 		}
 		else
 		{
-			len+=sprintf(whole+len,"%s",str);
- 			fflush(out_file);
+			if(j!=0)
+			{
+				len+=sprintf(whole+len,"%s",str);
+			}
 			write(comm_fd, recv, strlen(recv)+1); //send back a signal to show that it's done recieving data(lets it be in order)	
 		}
 		 
@@ -126,22 +135,30 @@ int main(int argc, char** argv)
 	printf("Running On Port Number: %d\n", ntohs(servaddr.sin_port)); //get port
 
   	listen(listen_fd, 10); //allow for max 10 connections (not sure how it changes threads)
- 
+	
+	FILE* fp=fopen("files_sorted.txt","w");
+	fflush(fp);
+	fclose(fp);
+	char* column=malloc(30);
+
+	comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
+ 	if (read(comm_fd, column, sizeof(column)) == 0) //get size lines of file
+	{
+		printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		free(column);
+		pthread_mutex_unlock(&socklock);
+		exit(EXIT_FAILURE);
+	}
+	write(comm_fd,"q",2);
 
     	while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
 	{
 		printf("got one\n");
-		void* state;
 		pthread_mutex_lock(&m);
 		pthread_t index=threadIDs[threadIndex++];
 		pthread_mutex_unlock(&m);
 		pthread_create(&index,NULL,&rec,NULL);
-		pthread_join(index,&state);
-		char* d=(char*)state;
-		if(d[0]=='y')
-		{
-			break;
-		}
+		pthread_join(index,NULL);
 	}
 	
 	printf("\n");
