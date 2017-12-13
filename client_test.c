@@ -34,7 +34,7 @@ struct arg
 void talk(char* fpath,char* type)
 {
 	pthread_mutex_lock(&socklock);
-	printf("talk\n");
+	//printf("talk\n");
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
 	fflush(stdout);
 	char * sendline = malloc(SIZEOF_STRING);
@@ -50,7 +50,7 @@ void talk(char* fpath,char* type)
 	
 	strncpy(filename1, fpath, strlen(fpath));
 	filename1[strlen(fpath) + 1] = '\0';
-	printf("%s\n", filename1);
+//FileName	//printf("%s\n", filename1);
 	FILE * fp = fopen(filename1, "r");
 	int row_position = 0;
 	int j = 0;
@@ -98,10 +98,10 @@ void talk(char* fpath,char* type)
 	int sentn = htonl(file_count);
 	char * recvline = malloc(100);
 	//read(sockfd,recvline,100);
-	printf("first write -> %d\n",ntohl(sentn));
+	//printf("first write -> %d\n",ntohl(sentn));
 	write(sockfd,&sentn,sizeof(sentn));   	
 	read(sockfd,recvline,100);
-	printf("second write -> %d\n",i);
+	//printf("second write -> %d\n",i);
 	write(sockfd,&i,sizeof(i));
 	read(sockfd,recvline,100);
 	int index1 = 0;
@@ -122,7 +122,7 @@ void talk(char* fpath,char* type)
 		read(sockfd,recvline,100);
 	}
 	//read(sockfd,recvline,100);    
-	printf("\nFile Sent\n");
+	//printf("\nFile Sent\n");
 	pthread_mutex_unlock(&socklock);
 	return;
 }
@@ -263,7 +263,7 @@ int main(int argc,char **argv)
 
 	int x=ftw(in_dir,count_files,0);
 	number_of_files++;
-	printf("Found %d files\n",number_of_files);
+	//printf("Found %d files\n",number_of_files);
 //	threads=malloc(sizeof(pthread_t)*number_of_files);
 	//if(threads=NULL)
 	//{
@@ -280,7 +280,7 @@ int main(int argc,char **argv)
 		pthread_mutex_unlock(&socklock);
 		exit(EXIT_FAILURE);
 	}
-	printf("bepfre write\n");
+	//printf("bepfre write\n");
 	write(sockfd,type_global,sizeof(type_global));
 	read(sockfd,junk,2);
 
@@ -301,7 +301,7 @@ int main(int argc,char **argv)
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
 	if(connect(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) == -1)
 	{
-		printf("9ERROR : Failed to connect to server [%s]\n",strerror(errno));
+		printf("ERROR : Failed to connect to server [%s]\n",strerror(errno));
 		pthread_mutex_unlock(&socklock);
 		exit(EXIT_FAILURE);
 	}
@@ -310,7 +310,7 @@ int main(int argc,char **argv)
 	read(sockfd,recv,2);
 
 //==================================================================GET SORTED FILE
-	printf("rec\n");
+	//printf("rec\n");
 	char * str = malloc(10000);
    	int size = 0;
 	int fileSize=0;
@@ -323,7 +323,7 @@ int main(int argc,char **argv)
 		free(str);
 		exit(EXIT_FAILURE);
 	}
-	printf("first read -> %d\n",size);
+	//printf("first read -> %d\n",size);
 	int q=write(sockfd,"q",2);
 	//printf("[+] Connect to client %d\n", listen_fd); //to be changed to ip?
 	if (read(sockfd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
@@ -332,14 +332,14 @@ int main(int argc,char **argv)
 		free(str);
 		exit(EXIT_FAILURE);
 	}
-	printf("second read -> %d\n",fileSize);
+	//printf("second read -> %d\n",fileSize);
 	write(sockfd,"q",2);
 	char* file=malloc(ntohl(size));
 	char* whole=malloc(ntohl(fileSize));	
 	strcpy(recv,"hello");
 	int j = 0;
 	int len=0;
-	printf("start getting file\n");
+	//printf("start getting file\n");
 	for (j = 0; j < ntohl(size); j++)
     	{
  		
