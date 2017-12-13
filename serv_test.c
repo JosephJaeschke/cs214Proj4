@@ -453,7 +453,11 @@ void doTheSort()
 	}
 	//printf("%d \n", type);
 	//mergesort(movies,1,file_count-1,file_count);
+	printf("before call me\n");
+	fflush(stdout);
 	callMe(file_count,type,movies,help);
+	printf("after call me\n");
+	fflush(stdout);
 	//printf("heyo\n");
 	//printf("\n");
 	int big=0;
@@ -462,7 +466,7 @@ void doTheSort()
 		big+=strlen(movies[j].string_row);
 	}
 	int len=0;
-	printf("%s",movies[139].string_row);
+	printf("here i am\n");
 	fflush(stdout);
 	char* sorted_output=malloc(big);
 	for(j = 0; j < file_count; j++)
