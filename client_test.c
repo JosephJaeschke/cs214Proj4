@@ -175,12 +175,13 @@ int count_files(const char* fpath,const struct stat* sb,int tflag)
 
 int main(int argc,char **argv)
 {
-    	char* in_dir=malloc(1000); //the -d parameter
+    char* in_dir=malloc(1000); //the -d parameter
 	strcpy(in_dir,"./\0");
 	type_global=malloc(100); //the -c parameter
 	strcpy(type_global,"none");
 	char* out_dir=malloc(1000); //the -o paramter
-    	int port = -1; //the -p paramter
+   	strcpy(out_dir,"./\0"); 
+	int port = -1; //the -p paramter
 	char* host=malloc(1000); //the -h parameter
 	strcpy(host,"bad\0");
 	if(argc==2&&strcmp(argv[2],"-h")==0)
@@ -285,6 +286,10 @@ int main(int argc,char **argv)
 	write(sockfd,type_global,strlen(type_global));
 	read(sockfd,junk,2);
 
+	char * junk2 = malloc(2);
+	write(sockfd,out_dir,strlen(out_dir));
+	read(sockfd,junk2,2);
+
 
 	if(ftw(in_dir,search,0)==-1)
 	{
@@ -361,8 +366,8 @@ int main(int argc,char **argv)
 	free(str);
 	free(file);
 //==================================================================GET SORTED FILE
-	char* fname=malloc(100);
-	sprintf(fname,"AllFiles-sorted-%s.csv",type_global);
+	char* fname=malloc(1000);
+	sprintf(fname,"%s/AllFiles-sorted-%s.csv",out_dir, type_global);
 	FILE* done=fopen(fname,"w");
 	fprintf(done,"%s",whole);
 	free(whole);

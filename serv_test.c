@@ -21,6 +21,7 @@ struct sockaddr_in servaddr; //init stuff
 int listen_fd, comm_fd;
 char* token;
 char header='0';
+char * out_dir_global;
 
 void mergeStr(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,int num)
 {
@@ -651,6 +652,7 @@ void* rec(void* args)
 
 int main(int argc, char** argv)
 {
+	out_dir_global = malloc(1000);
 	if(argc==2&&strcmp(argv[1],"-h")==0)
 	{
 		printf("./sorter_server -p <port>\n");
@@ -706,6 +708,7 @@ int main(int argc, char** argv)
 		listen(listen_fd, 500); //allow for max 10 connections (not sure how it changes threads)
 		
 		FILE* fp=fopen("files_sorted.txt","w");
+		
 		fflush(fp);
 		fclose(fp);
 		token=malloc(100);
@@ -725,7 +728,8 @@ int main(int argc, char** argv)
 //		fflush(stdout);
 		printf("%s,",ip);
 		fflush(stdout);
-		if (read(comm_fd, token, 100) == 0) //get size lines of file
+
+		if (read(comm_fd, token, 100) == 0) //get token
 		{
 			//printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 			free(token);
@@ -734,6 +738,20 @@ int main(int argc, char** argv)
 		}
 		//printf("%s\n",token);
 		write(comm_fd,"q",2);
+
+		
+		if (read(comm_fd, out_dir_global, 999) == 0) //get out directory
+		{
+			//printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+			free(out_dir_global);
+			pthread_mutex_unlock(&socklock);
+			exit(EXIT_FAILURE);
+		}
+		//printf("%s\n",token);
+		write(comm_fd,"q",2);
+
+
+
 
 		while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
 		{
