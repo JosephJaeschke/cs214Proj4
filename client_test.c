@@ -184,7 +184,7 @@ int main(int argc,char **argv)
 	int port = -1; //the -p paramter
 	char* host=malloc(1000); //the -h parameter
 	strcpy(host,"bad\0");
-	if(argc==2&&strcmp(argv[2],"-h")==0)
+	if(argc==2&&strcmp(argv[2],"-help")==0)
 	{
 		printf("./sorter_client -c <column> -h <host name> -p <port>\nOptional: -o <output dir> -d <input dir>");
 		return 0;
@@ -202,7 +202,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -help \n");
 				return 0;
 			}
 			strcpy(type_global, argv[i+1]);
@@ -211,7 +211,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -help \n");
 				return 0;
 			}
 		strcpy(in_dir, argv[i+1]);
@@ -220,7 +220,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -help \n");
 				return 0;
 			}
 			strcpy(out_dir, argv[i+1]);
@@ -229,7 +229,7 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -help \n");
 				return 0;
 			}
 			port=strtol(argv[i+1],NULL,10);
@@ -238,16 +238,16 @@ int main(int argc,char **argv)
 		{
 			if((i % 2) == 0)
 			{
-				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -h \n");
+				fprintf(stderr, "<ERROR> : Incorrect format, for more information , please use  $ ./sorter -help \n");
 				return 0;
 			}
-			strcpy(out_dir, argv[i+1]);
+			strcpy(host, argv[i+1]);
 		}
 	
 
 
 	}
-	if(strcmp(type_global,"none")==0||port==-1||strcmp(host,"bad\0"))
+	if(strcmp(type_global,"none")==0||port==-1||strcmp(host,"bad\0") == 0)
 	{
 		printf("ERROR: Must specify a cloumn, a port, and a host\n");
 		return 0;
@@ -367,7 +367,14 @@ int main(int argc,char **argv)
 	free(file);
 //==================================================================GET SORTED FILE
 	char* fname=malloc(1000);
-	sprintf(fname,"%s/AllFiles-sorted-%s.csv",out_dir, type_global);
+	if(strcmp(out_dir, "./\0") == 0){
+		//printf("a");
+		sprintf(fname,"%sAllFiles-sorted-%s.csv",out_dir, type_global);
+	}
+	else
+		//printf("b");
+		sprintf(fname,"%s/AllFiles-sorted-%s.csv",out_dir, type_global);
+
 	FILE* done=fopen(fname,"w");
 	fprintf(done,"%s",whole);
 	free(whole);
