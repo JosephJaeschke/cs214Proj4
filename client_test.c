@@ -177,8 +177,8 @@ int main(int argc,char **argv)
 {
     	char* in_dir=malloc(1000); //the -d parameter
 	strcpy(in_dir,"./\0");
-	type_global=malloc(30); //the -c parameter
-	strcpy(type_global,"none\0");
+	type_global=malloc(100); //the -c parameter
+	strcpy(type_global,"none");
 	char* out_dir=malloc(1000); //the -o paramter
     	int port = -1; //the -p paramter
 	char* host=malloc(1000); //the -h parameter
@@ -246,7 +246,7 @@ int main(int argc,char **argv)
 
 
 	}
-	if(strcmp(type_global,"none\0")==0||port==-1||strcmp(host,"bad\0"))
+	if(strcmp(type_global,"none")==0||port==-1||strcmp(host,"bad\0"))
 	{
 		printf("ERROR: Must specify a cloumn, a port, and a host\n");
 		return 0;
@@ -281,7 +281,8 @@ int main(int argc,char **argv)
 		exit(EXIT_FAILURE);
 	}
 	//printf("bepfre write\n");
-	write(sockfd,type_global,sizeof(type_global));
+	//printf("%s\n", type_global);
+	write(sockfd,type_global,strlen(type_global));
 	read(sockfd,junk,2);
 
 

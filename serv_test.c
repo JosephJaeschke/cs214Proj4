@@ -31,32 +31,39 @@ void mergeStr(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
 	{
 		if(arr[i].point<arr[j].point)
 		{
+				bzero(help[k].data, strlen(help[k].data));	
         	    strcpy(help[k].data,arr[i].data);
-        	    help[k].point=arr[i].point;
-        	    strcpy(help[k].string_row,arr[i].string_row);
+				help[k].point=arr[i].point;
+        	    bzero(help[k].string_row, strlen(help[k].string_row));
+				strcpy(help[k].string_row,arr[i].string_row);
         	    k++;
         	    i++;
 		}
         	else
 		{
-        	    strcpy(help[k].data,arr[j].data);
+        	    bzero(help[k].data, strlen(help[k].data));
+				strcpy(help[k].data,arr[j].data);
         	    help[k].point=arr[j].point;
-        	    strcpy(help[k].string_row,arr[j].string_row);
+        	    bzero(help[k].string_row, strlen(help[k].string_row));
+				strcpy(help[k].string_row,arr[j].string_row);
         	    k++;
         	    j++;
 		}
 	}
         else if(strcmp(arr[i].data,arr[j].data)<0)
 	{
-            strcpy(help[k].data,arr[i].data);
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[i].data);
             help[k].point=arr[i].point;
-            strcpy(help[k].string_row,arr[i].string_row);
+            bzero(help[k].string_row, strlen(help[k].string_row));
+			strcpy(help[k].string_row,arr[i].string_row);
             k++;
             i++;
 	}
         else
 	{
-            strcpy(help[k].data,arr[j].data);
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[j].data);
             help[k].point=arr[j].point;
             strcpy(help[k].string_row,arr[j].string_row);
             k++;
@@ -66,7 +73,8 @@ void mergeStr(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
 
     while(i<=rptr)
     {
-            strcpy(help[k].data,arr[i].data);
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[i].data);
             help[k].point=arr[i].point;
             strcpy(help[k].string_row,arr[i].string_row);
             k++;
@@ -74,7 +82,8 @@ void mergeStr(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
     }
     while(j<=rlimit) 
     {
-            strcpy(help[k].data,arr[j].data);
+            bzero(help[k].data, strlen(help[k].data));	
+			strcpy(help[k].data,arr[j].data);
             help[k].point=arr[j].point;
             strcpy(help[k].string_row,arr[j].string_row);
             k++;
@@ -82,7 +91,8 @@ void mergeStr(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
     }
     for(i=lptr,j=0;i<=rlimit;i++,j++)
     {
-	        strcpy(arr[i].data,help[j].data);
+	    bzero(arr[i].data, strlen(arr[i].data));	
+		strcpy(arr[i].data,help[j].data);
 		arr[i].point=help[j].point;
 		strcpy(arr[i].string_row,help[j].string_row);
     }
@@ -109,7 +119,8 @@ void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
 	{
 		if(arr[i].point<arr[j].point)
 		{
-        	    strcpy(help[k].data,arr[i].data);
+        	    bzero(help[k].data, strlen(help[k].data));
+				strcpy(help[k].data,arr[i].data);
         	    help[k].point=arr[i].point;
         	    strcpy(help[k].string_row,arr[i].string_row);
         	    k++;
@@ -117,7 +128,8 @@ void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
 		}
         	else
 		{
-        	    strcpy(help[k].data,arr[j].data);
+        	    bzero(help[k].data, strlen(help[k].data));
+				strcpy(help[k].data,arr[j].data);
         	    help[k].point=arr[j].point;
         	    strcpy(help[k].string_row,arr[j].string_row);
         	    k++;
@@ -126,6 +138,7 @@ void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
 	}
         else if(strtof(arr[i].data,NULL)<strtof(arr[j].data,NULL))
 	{
+			bzero(help[k].data, strlen(help[k].data));
 			strcpy(help[k].data,arr[i].data);
             help[k].point=arr[i].point;
             strcpy(help[k].string_row,arr[i].string_row);
@@ -134,7 +147,8 @@ void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
 	}
         else
 	{
-            strcpy(help[k].data,arr[j].data);
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[j].data);
             help[k].point=arr[j].point;
             strcpy(help[k].string_row,arr[j].string_row);
             k++;
@@ -143,7 +157,8 @@ void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
     }
     while(i<=rptr) 
     {
-            strcpy(help[k].data,arr[i].data);
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[i].data);
             help[k].point=arr[i].point;
             strcpy(help[k].string_row,arr[i].string_row);
             k++;
@@ -151,7 +166,8 @@ void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
     }
     while(j<=rlimit) 
     {
-            strcpy(help[k].data,arr[j].data);
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[j].data);
             help[k].point=arr[j].point;
             strcpy(help[k].string_row,arr[j].string_row);
             k++;
@@ -159,7 +175,8 @@ void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,
     }
     for(i=lptr,j=0;i<=rlimit;i++,j++)
     {
-        strcpy(arr[i].data,help[j].data);
+        bzero(arr[i].data, strlen(arr[i].data));	
+		strcpy(arr[i].data,help[j].data);
 		arr[i].point=help[j].point;
 		strcpy(arr[i].string_row,help[j].string_row);
     }
@@ -363,8 +380,8 @@ void doTheSort()
 						{
 							strncpy(movies[count].data, movies[count].string_row+p1,index-p1);
 							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
-							//movies[count].data[index-p1] = '\0';
-							//fprintf(stdout, "%d: %s\n",count, movies[count].data);	
+							movies[count].data[index-p1] = '\0';
+							//fprintf(stdout, "%d: [%s]\n",count, movies[count].data);	
 							trim(movies[count].data);
 							break;
 						}
@@ -387,9 +404,9 @@ void doTheSort()
 						}
 						else if(comma_number == comma_position_max)
 						{
-							strncpy(movies[count].data, movies[count].string_row+p1,index-p1);
+							strncpy(movies[count].data, movies[count].string_row+p1+1,index-p1-2);
 							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
-							//movies[count].data[index-p1] = '\0';
+							movies[count].data[index-p1-2] = '\0';
 							//fprintf(stdout, "%d: %s\n",count, movies[count].data);	
 							trim(movies[count].data);
 							break;
@@ -417,8 +434,8 @@ void doTheSort()
 						{
 							strncpy(movies[count].data, movies[count].string_row+p1,index-p1);
 							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
-							//movies[count].data[index-p1] = '\0';
-							//fprintf(stdout, "%d: %s\n",count, movies[count].data);	
+							movies[count].data[index-p1] = '\0';
+							//fprintf(stdout, "%d: [%s]\n",count, movies[count].data);	
 							trim(movies[count].data);
 							break;
 						}
@@ -441,15 +458,25 @@ void doTheSort()
 	int k;
 	for(j = 1; j < file_count; j++)
 	{
+		//printf("\n");
 		for(k = 0; movies[j].data[k] != '\0'; k++)
-		{
+		{	//printf("%c", movies[j].data[k]);
+					
 			if(!(isdigit(movies[j].data[k])))
 			{
+				if(isspace(movies[j].data[k])){
+					continue;
+				}
 				if(movies[j].data[k] != '.' || movies[j].data[k] != '-')
 				{
 					type = 's';	
+					break;
+					//printf("%d [%s], 
 				}
 			}
+		}
+		if(type == 's'){
+			break;
 		}
 	}
 	//printf("%d \n", type);
@@ -676,12 +703,12 @@ int main(int argc, char** argv)
 //
 //		printf("Running On Port Number: %d\n", ntohs(servaddr.sin_port)); //get port
 
-		listen(listen_fd, 10); //allow for max 10 connections (not sure how it changes threads)
+		listen(listen_fd, 500); //allow for max 10 connections (not sure how it changes threads)
 		
 		FILE* fp=fopen("files_sorted.txt","w");
 		fflush(fp);
 		fclose(fp);
-		token=malloc(30);
+		token=malloc(100);
 
 		struct sockaddr* client_addr;
 		struct sockaddr* addr;
@@ -698,13 +725,14 @@ int main(int argc, char** argv)
 //		fflush(stdout);
 		printf("%s,",ip);
 		fflush(stdout);
-		if (read(comm_fd, token, sizeof(token)) == 0) //get size lines of file
+		if (read(comm_fd, token, 100) == 0) //get size lines of file
 		{
 			//printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
 			free(token);
 			pthread_mutex_unlock(&socklock);
 			exit(EXIT_FAILURE);
 		}
+		//printf("%s\n",token);
 		write(comm_fd,"q",2);
 
 		while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
