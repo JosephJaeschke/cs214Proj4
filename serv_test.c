@@ -689,7 +689,7 @@ int main(int argc, char** argv)
 	printf("Received connections from: ");
 	fflush(stdout);
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htons(INADDR_ANY);
+	servaddr.sin_addr.s_addr = INADDR_ANY;
 	servaddr.sin_port = htons(strtol(argv[2],NULL,10)); //set to a random port which isn't being used
 	while(1)
 	{
