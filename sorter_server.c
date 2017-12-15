@@ -1,189 +1,684 @@
-//////////////////////////////////////////////
-//		Create Your Own Server				//
-//		@ by Hanxiong Chen					//
-//////////////////////////////////////////////
-
-
-//////// Part 1: Headers and Macros //////////
-/* C Library Stuff */
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-
-/* Socket Stuff */
-#include <sys/sendfile.h>
+/*Required Headers*/
+ 
+#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-
-/* Pthread Library */
+#include <netdb.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <pthread.h>
+#include <ctype.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include "sorter_server.h"
 
-/* Macros (define your macros below) */
-#define MAX_NUM_THREAD 10
-/********* Start Coding Here *********/
-// You need a port number here
-#define PORT 9000
-// Need more? Add yours
+pthread_mutex_t m;
+pthread_mutex_t socklock;
+pthread_t* threadIDs;
+int threadIndex=0;
+struct sockaddr_in servaddr; //init stuff
+int listen_fd, comm_fd;
+char* token;
+char header='0';
+char * out_dir_global;
 
-/********* Coding End ***********/
-
-
-
-
-
-
-
-
-
-
-
-
-/********** Helper functions ***********/
-int status = 1; // for server running status
-int num_of_thread = 0; // currently created num of threads
-
-typedef struct tid_type
+void mergeStr(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,int num)
 {
-	pthread_t tid;
-	int isFree;
-	int socketfd;
-}tid_type;
-
-/* Global thread id pool */
-tid_type tid_pool[MAX_NUM_THREAD];
-	
-void init_tid_pool()
-{
-	for(int i = 0; i < MAX_NUM_THREAD; i++)
+    int i=lptr,j=llimit,k=0;
+    while(i<=rptr && j<=rlimit) 
+    {
+	if(strcmp(arr[i].data,arr[j].data)==0)
 	{
-		tid_pool[i].isFree = 1;
-		tid_pool[i].socketfd = -1;
-	}
-}
-
-/* return the index of available tid in pool */
-int get_tid()
-{
-	for (int i = 0; i < MAX_NUM_THREAD; i++)
-	{
-		if (tid_pool[i].isFree == 1)
+		if(arr[i].point<arr[j].point)
 		{
-			return i;
+				bzero(help[k].data, strlen(help[k].data));	
+        	    strcpy(help[k].data,arr[i].data);
+				help[k].point=arr[i].point;
+        	    bzero(help[k].string_row, strlen(help[k].string_row));
+				strcpy(help[k].string_row,arr[i].string_row);
+        	    k++;
+        	    i++;
+		}
+        	else
+		{
+        	    bzero(help[k].data, strlen(help[k].data));
+				strcpy(help[k].data,arr[j].data);
+        	    help[k].point=arr[j].point;
+        	    bzero(help[k].string_row, strlen(help[k].string_row));
+				strcpy(help[k].string_row,arr[j].string_row);
+        	    k++;
+        	    j++;
 		}
 	}
-	return -1;
-}
-
-void release_tid(int index)
-{
-	tid_pool[index].isFree = 1;
-}
-/********** Helper functions end *********/
-
-
-
-//////// Part 3: Service function ////////////
-
-/* Define your service function to serve requests */
-
-// In this demo code, our server only give response
-// messages to the client
-void * service(void *args)
-{
-	// this is the socket for our server 
-	// to talk to client
-	int index = (int)args;
-	int client_socket = tid_pool[index].socketfd;
-	// define two buffers, receive and send
-	char send_buf[256] = "\nThank you for file\n";
-	char recv_buf[256];
-	/* STEP 5: receive data */
-	// use read system call to read data 
-	read(client_socket, recv_buf, 256);
-	long fsize=strtol(recv_buf,NULL,10);
-	printf("[r] make room for %lu bytes\n",fsize);
-	char filebuff[fsize];
-	// replace receive buffer with your buffer name
-//	printf("[r] Reading from client: %s\n", recv_buf);
-	FILE* out=fopen("server_dump.csv","w");
-	long n=0;
-	fflush(stdout);
-	while(1)
+        else if(strcmp(arr[i].data,arr[j].data)<0)
 	{
-		n+=read(client_socket,filebuff+n,fsize);
-		printf("received %lu bytes so far\n",n);
-		fflush(stdout);
-		if(n>=fsize-400)
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[i].data);
+            help[k].point=arr[i].point;
+            bzero(help[k].string_row, strlen(help[k].string_row));
+			strcpy(help[k].string_row,arr[i].string_row);
+            k++;
+            i++;
+	}
+        else
+	{
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[j].data);
+            help[k].point=arr[j].point;
+            strcpy(help[k].string_row,arr[j].string_row);
+            k++;
+            j++;
+	}
+    }
+
+    while(i<=rptr)
+    {
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[i].data);
+            help[k].point=arr[i].point;
+            strcpy(help[k].string_row,arr[i].string_row);
+            k++;
+            i++;
+    }
+    while(j<=rlimit) 
+    {
+            bzero(help[k].data, strlen(help[k].data));	
+			strcpy(help[k].data,arr[j].data);
+            help[k].point=arr[j].point;
+            strcpy(help[k].string_row,arr[j].string_row);
+            k++;
+            j++;
+    }
+    for(i=lptr,j=0;i<=rlimit;i++,j++)
+    {
+	    bzero(arr[i].data, strlen(arr[i].data));	
+		strcpy(arr[i].data,help[j].data);
+		arr[i].point=help[j].point;
+		strcpy(arr[i].string_row,help[j].string_row);
+    }
+}
+
+void sortStr(CSVRow* a,CSVRow *b, int i,int j,int num)
+{
+    int mid;
+    if(i<j)
+    {
+        mid=(i+j)/2;
+        sortStr(a,b,i,mid,num); 
+        sortStr(a,b,mid+1,j,num);
+        mergeStr(a,b, i,mid,mid+1,j,num); 
+    }
+}
+
+void mergeInt(CSVRow* arr,CSVRow* help, int lptr,int rptr,int llimit,int rlimit,int num)
+{
+    int i=lptr,j=llimit,k=0;
+    while(i<=rptr && j<=rlimit) 
+    {
+	if(strtof(arr[i].data,NULL)==strtof(arr[j].data,NULL))
+	{
+		if(arr[i].point<arr[j].point)
 		{
-			printf("i got the whole thing\n");
-			fflush(stdout);
-			write(client_socket,"!",1);
+        	    bzero(help[k].data, strlen(help[k].data));
+				strcpy(help[k].data,arr[i].data);
+        	    help[k].point=arr[i].point;
+        	    strcpy(help[k].string_row,arr[i].string_row);
+        	    k++;
+        	    i++;
+		}
+        	else
+		{
+        	    bzero(help[k].data, strlen(help[k].data));
+				strcpy(help[k].data,arr[j].data);
+        	    help[k].point=arr[j].point;
+        	    strcpy(help[k].string_row,arr[j].string_row);
+        	    k++;
+        	    j++;
+		}
+	}
+        else if(strtof(arr[i].data,NULL)<strtof(arr[j].data,NULL))
+	{
+			bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[i].data);
+            help[k].point=arr[i].point;
+            strcpy(help[k].string_row,arr[i].string_row);
+            k++;
+            i++;
+	}
+        else
+	{
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[j].data);
+            help[k].point=arr[j].point;
+            strcpy(help[k].string_row,arr[j].string_row);
+            k++;
+            j++;
+	}
+    }
+    while(i<=rptr) 
+    {
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[i].data);
+            help[k].point=arr[i].point;
+            strcpy(help[k].string_row,arr[i].string_row);
+            k++;
+            i++;
+    }
+    while(j<=rlimit) 
+    {
+            bzero(help[k].data, strlen(help[k].data));
+			strcpy(help[k].data,arr[j].data);
+            help[k].point=arr[j].point;
+            strcpy(help[k].string_row,arr[j].string_row);
+            k++;
+            j++;
+    }
+    for(i=lptr,j=0;i<=rlimit;i++,j++)
+    {
+        bzero(arr[i].data, strlen(arr[i].data));	
+		strcpy(arr[i].data,help[j].data);
+		arr[i].point=help[j].point;
+		strcpy(arr[i].string_row,help[j].string_row);
+    }
+}
+
+void sortInt(CSVRow* a,CSVRow* b, int i,int j,int num)
+{
+    int mid;
+    if(i<j)
+    {
+        mid=(i+j)/2;
+        sortInt(a,b, i,mid,num); 
+        sortInt(a,b, mid+1,j,num); 
+        mergeInt(a,b, i,mid,mid+1,j,num); 
+    }
+}
+
+void callMe(int size,char type,CSVRow* arr, CSVRow* b)
+{
+	if(type=='i')
+	{
+		sortInt(arr,b, 1,size-1,size);
+	}
+	else
+	{
+		sortStr(arr,b, 1,size-1,size);
+	}
+	return;
+}
+
+void trim(char* str)
+{
+	char * t = malloc(strlen(str));
+	int i =0;
+	int j=0;
+	for(i=0;i<strlen(str);i++)
+	{
+		if(isspace(str[i])==0)
+		{
+			t[j]=str[i];
+			j++;
+		}
+	}
+	t[j]='\0';
+	strcpy(str,t);
+	free(t);
+}
+
+
+
+void doTheSort()
+{
+	FILE* fp=fopen("files_sorted.txt","r");
+	int file_count = 0;
+	char c = 0;
+	int i = 0;
+	char * str_file = malloc(10);
+	int row_position = 0;
+	int j;
+	//fprintf(stdout, "%s\n", token);		
+	
+	c = fgetc(fp);
+	while (c != EOF) 
+	{
+		//printf("%c\n",c);
+		str_file = realloc(str_file, (i+1) * sizeof(char));	
+		str_file[i] = c;
+		if(c == '\n')
+		{
+			file_count++;
+		}
+		i++;
+		c = fgetc(fp);
+    	}
+        
+	fclose(fp);
+	
+	str_file[i] = '\0';
+	
+	
+	CSVRow *movies = malloc(file_count * sizeof(CSVRow));
+	//token = strtok(str_file, "\n");
+	
+	for(j = 0; j < file_count; j++)
+	{
+		movies[j].data = malloc(10000);
+		movies[j].point = j;
+		movies[j].string_row = malloc(10000);
+	}
+
+	CSVRow* help=malloc(sizeof(CSVRow)*file_count*2);    //array used for merging
+    	for(j =0;j<file_count;j++)
+    	{
+		help[j].data=malloc(10000);
+		help[j].point=j;
+		help[j].string_row=malloc(10000);
+    	}
+
+	//CSVRow *tempy = malloc(file_count * sizeof(CSVRow));
+	//token = strtok(str_file, "\n");
+	
+	//for(int j = 0; j < file_count; j++){
+	//	tempy[j].data = malloc(1000);
+	//	tempy[j].point = j;
+	//	tempy[j].string_row = malloc(1000);
+	//}
+
+
+	int temp = 0;
+	int count = 0;
+	int index = 0;
+	int comma_position_max = 0;
+	int p1 = 0;
+	int p2 = 0;
+	int char_found = 0;
+	int comma_number = 0;
+	char * check_token = malloc(1000);
+	c = 0;
+	for(j = 0; j < i; j++)
+	{
+		if(str_file[j] == '\n')
+		{
+			//printf("a\n");
+			strncpy(movies[count].string_row, str_file+temp,j-temp+1);
+			movies[count].string_row[j-temp+1] = '\0';
+			if (count == 0)
+			{
+				c = movies[count].string_row[index];
+				for(index = 0; index<strlen(movies[count].string_row) ; index++)
+				{
+					//fprintf(stdout, "%c\n", c);
+					c = movies[count].string_row[index];
+					if(c == ',' || movies[count].string_row[index+1] == '\n')
+					{
+						if( movies[count].string_row[index+1] == '\n')
+						{
+							index++;
+						}
+						comma_position_max++;
+						if(index == p1 || index == p1+1)
+						{
+							check_token = "\0";
+						}
+						else
+						{
+							strncpy(check_token, movies[count].string_row+p1,index-p1);
+							check_token[index-p1] =  '\0';
+							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
+						}
+						if(strcmp(check_token,token) == 0)
+						{
+							char_found = 1;
+							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
+							break;
+						}
+						p1 = index+1;
+						if( movies[count].string_row[index+1] == '\n')
+						{
+							index--;
+						}
+
+					}
+					//printf("%d\n %c",char_found, c);
+				}
+				if(char_found == 0)
+				{
+					//fprintf(stderr, "ERROR: <Selected item was not found in parameters>\n");
+					free(check_token);
+					free(movies);
+					free(token);
+					free(str_file);
+
+					return;
+				}
+				//fprintf(stdout,"%d : %d\n",char_found , comma_position_max);
+				//fprintf(stdout, "[%s] : [%s] \n",token, check_token);
+				strcpy(movies[count].data, token);
+				movies[count].data[strlen(token)+1] = '\0';
+			}
+			else
+			{
+				//fprintf(stdout, "%d \n ", count);
+				comma_number = 0;
+				index = 0;
+				p1 = 0;
+				c = movies[count].string_row[index];
+				for(index = 0; index<strlen(movies[count].string_row); index++)
+				{
+					//fprintf(stdout, "%c\n", c);
+					c = movies[count].string_row[index];
+					if(c == ',' && index+1 != strlen(movies[count].string_row) && movies[count].string_row[index+1] == '"')
+					{
+							
+						comma_number++;
+						if((index == p1) && (comma_number == comma_position_max))
+						{
+							//movies[count].data = "0\0";
+							break;
+						}
+						else if(comma_number == comma_position_max)
+						{
+							strncpy(movies[count].data, movies[count].string_row+p1,index-p1);
+							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
+							movies[count].data[index-p1] = '\0';
+							//fprintf(stdout, "%d: [%s]\n",count, movies[count].data);	
+							trim(movies[count].data);
+							break;
+						}
+						p1 = index+1;
+						
+						index = index+2;
+						int x;
+						for(x = 0; c != '"'; index++)
+						{
+							c = movies[count].string_row[index];
+						}	
+						
+						c = movies[count].string_row[index];
+						//fprintf(stdout,"%c\n" , c);
+						comma_number++;
+						if((index == p1) && (comma_number == comma_position_max))
+						{
+							//movies[count].data = "0\0";
+							break;
+						}
+						else if(comma_number == comma_position_max)
+						{
+							strncpy(movies[count].data, movies[count].string_row+p1+1,index-p1-2);
+							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
+							movies[count].data[index-p1-2] = '\0';
+							//fprintf(stdout, "%d: %s\n",count, movies[count].data);	
+							trim(movies[count].data);
+							break;
+						}
+						p1 = index+1;
+						index++;
+						c = movies[count].string_row[index];
+	
+					}
+					if(c == ',' || movies[count].string_row[index+1] == '\n')
+					{
+
+						if( movies[count].string_row[index+1] == '\n')
+						{
+							index++;
+						}
+
+						comma_number++;
+						if((index == p1) && (comma_number == comma_position_max))
+						{
+							//movies[count].data = "NULL";
+							break;
+						}
+						else if(comma_number == comma_position_max)
+						{
+							strncpy(movies[count].data, movies[count].string_row+p1,index-p1);
+							//fprintf(stdout, "[%s] , [%s]\n", check_token, token);
+							movies[count].data[index-p1] = '\0';
+							//fprintf(stdout, "%d: [%s]\n",count, movies[count].data);	
+							trim(movies[count].data);
+							break;
+						}
+						p1 = index+1;
+						if( movies[count].string_row[index+1] == '\n')
+						{
+							index--;
+						}
+
+					}
+				}
+			}
+			
+			temp = j+1;
+			count++;
+		}
+	}
+	
+	char type = 'i';
+	int k;
+	for(j = 1; j < file_count; j++)
+	{
+		//printf("\n");
+		for(k = 0; movies[j].data[k] != '\0'; k++)
+		{	//printf("%c", movies[j].data[k]);
+					
+			if(!(isdigit(movies[j].data[k])))
+			{
+				if(isspace(movies[j].data[k])){
+					continue;
+				}
+				if(movies[j].data[k] != '.' || movies[j].data[k] != '-')
+				{
+					type = 's';	
+					break;
+					//printf("%d [%s], 
+				}
+			}
+		}
+		if(type == 's'){
 			break;
 		}
-		write(client_socket,"?",1);
 	}
-	fflush(stdout);
-
-	printf("received %lu bytes\n",n);
-	fprintf(out,"%s",filebuff);
-	/*
-	int n=0;
-	while(n!=fsize)
+	//printf("%d \n", type);
+	//mergesort(movies,1,file_count-1,file_count);
+	callMe(file_count,type,movies,help);
+	//printf("heyo\n");
+	//printf("\n");
+	int big=0;
+	for(j=0;j<file_count;j++)
 	{
-		printf("1");
-		n+=recv(client_socket,filebuff,fsize,0);
-		printf("received %d bytes\n",n);
-		if(n<=0)
-		{
-			printf("err\n");
-			perror("read");	
-		}
+		big+=strlen(movies[j].string_row);
 	}
-	*/
-	//printf("[r] %s\n\n",filebuff);
-	fclose(out);
-	/* STEP 6: send data */
-	// prepare your sending data
-	// use write system call to send data
-	write(client_socket, send_buf, 256);
+	int len=0;
+	char* sorted_output=malloc(big);
+	for(j = 0; j < file_count; j++)
+	{
+		//printf("j:%d\n",j);
+		len+=sprintf(sorted_output+len,"%s",movies[j].string_row);
+		//printf("[%s]\n", movies[j].data);
+	}
+	//FILE* dump=fopen("server_dump.csv","w");
+	//fprintf(dump,"%s",sorted_output);
+	//fclose(dump);
+	
+//============================================================ SEND FILE BACK
+	//printf("talk\n");
+	//comm_fd=socket(AF_INET,SOCK_STREAM,0);
+	char * sendline = malloc(10000);
+ 
+	
+	row_position = 0;
+	j = 0;
 
-	printf("[s] Data sent\n===\n");
+	free(str_file);
+	
+	int sentn = htonl(file_count);
+	char * recvline = malloc(100);
+	char* resp=malloc(2);
+	//read(sockfd,recvline,100);
+	//printf("first write -> %d\n",sentn);
+	write(comm_fd,&sentn,sizeof(sentn));   	
+	read(comm_fd,resp,2);
+	//printf("second write -> %d\n",i);
+	write(comm_fd,&big,sizeof(big));
+	read(comm_fd,resp,2);
+	int index1 = 0;
+	int index2 = 0;
+	//printf("start sending file\n");
 
-	/* STEP 7: close socket */
-	close(client_socket);
+	for(j = 0; j < file_count; j++)
+    	{
+		bzero(sendline, 10000);
+		while(sorted_output[index2] != '\n')
+		{
+			index2++;
+		}
+		index2++;
+		strncpy(sendline,sorted_output+index1, index2 - index1);
+		write(comm_fd,sendline,strlen(sendline)+1);
+		index1 = index2; 
+		read(comm_fd,recvline,100);
+	}
+	//read(sockfd,recvline,100);    
+	//printf("\nFile Sent\n");
+	return;
+//============================================================ SEND FILE BACK
 
-	/* Need to add lock here */
-	release_tid(index);
-	num_of_thread--;
+
+
+
+
+	for(j = 0; j < file_count; j++)
+	{
+		free(movies[j].data);
+		free(help[j].data);
+		//movies[j].point = j;
+		free(movies[j].string_row);
+		free(help[j].string_row);
+	}
+
+
+	free(check_token);
+	free(movies);
+	free(help);
+	free(token);
+	free(str_file);
+	free(sorted_output);
+	return;
+
 }
 
-/////// Part 2: Main Function ///////////////
-
-int main(int argc, char **argv)
+void write_test(FILE * fp, char * str) //test function to be replaced with merge/etc
 {
-	/* optional: You can add args checking 
-	 * here. That means you allow user to
-	 * enter some information such as port
-	 * number 
-	 * */
-	
-	/********** Start Coding Here ***********/
-	// Let's define some useful variables first
-	// We need a server socket and a client socket
-	int server_sock, client_sock;
-	// Then we need a sockaddr_in struct to hold
-	// socket information
-	struct sockaddr_in address;
+	//printf("%s", str);
+	fprintf(fp, "%s", str);
+	fflush(fp);
+}
 
-	/* STEP 1: create socket and setup sockaddr_in */
+void* rec(void* args)
+{	
+	//printf("rec\n");
+	pthread_mutex_lock(&socklock);
+	char * str = malloc(10000);
+   	int size = 0;
+	int fileSize=0;
+	char* recv=malloc(100);
+	strcpy(recv,"hello");
+	if (read(comm_fd, &size, sizeof(size)) == 0) //get size lines of file
+	{
+		//printf("1[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		free(str);
+		pthread_mutex_unlock(&socklock);
+		return "no";
+	}
+	//printf("-- %d\n",ntohl(size));
+	write(comm_fd,"q",2);
+	//printf("[+] Connect to client %d\n", listen_fd); //to be changed to ip?
+	if(ntohl(size)==758185984)
+	{
+		//this is not a file
+		//printf("dump\n");
+		//do the dump thing and send over sorted of all files
+		pthread_mutex_unlock(&socklock);
+		doTheSort();
+		//printf("dd\n");
+		header='0';
+		return "yo";
+	}
+	if (read(comm_fd, &fileSize, sizeof(fileSize)) == 0) //get size lines of file
+	{
+		//printf("2[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+		free(str);
+		pthread_mutex_unlock(&socklock);
+		return "no";
+	}
+	write(comm_fd,"q",2);
+	FILE* out_file = fopen("files_sorted.txt", "a");
+	char* file=malloc(ntohl(size));
+	char* whole=malloc(ntohl(fileSize));	
+	strcpy(recv,"hello");
+	int j = 0;
+	int len=0;
+	for (j = 0; j < ntohl(size); j++)
+    	{
+ 		
+		bzero(str, 10000); 
+       		if(read(comm_fd,str,10000) == 0) //go through each line of csv, and get the line
+		{
+			//printf("3[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+ 			comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL);
+			continue;
+		}
+		else
+		{
+			if(j!=0||header=='0')
+			{
+				header='1';
+				len+=sprintf(whole+len,"%s",str);
+			}
+			write(comm_fd, recv, strlen(recv)+1); //send back a signal to show that it's done recieving data(lets it be in order)	
+		}
+		 
+    	}
+	fprintf(out_file,"%s",whole);
+ 	fclose(out_file);
+	free(str);
+	free(file);
+	free(whole);
+	pthread_mutex_unlock(&socklock);
+	return "no";
+}
+
+int main(int argc, char** argv)
+{
+	out_dir_global = malloc(1000);
+	if(argc==2&&strcmp(argv[1],"-h")==0)
+	{
+		printf("./sorter_server -p <port>\n");
+		return 0;
+	}
+	if(argc!=3)
+	{
+		printf("ERROR: Incorrect number of arguments\n");
+		printf("./sorter_server -p <port>\n");
+		return 0;
+	}
+	if(strcmp(argv[1],"-p")!=0)
+	{
+		printf("ERROR: Incorrect number of arguments\n");
+		printf("./sorter_server -p <port>\n");
+		return 0;
+	}
+
+	threadIDs=malloc(sizeof(pthread_t)*5); //change 5 to how many files  
+ 	char state='0';
+	bzero( &servaddr, sizeof(servaddr)); //zero at addresse
+	 
+	//int port = atoi(argv[1]); 
 	
-	// you can call socket(AF_INET, SOCK_STREAM, 0)
-	// to create a socket
-	// REMEMBER: ALWAYS CHECK FAILURE WHEN YOU DO I/O
-	if ((server_sock = socket(AF_INET, SOCK_STREAM, 0)) <= 0)
+		
+	if((listen_fd=socket(AF_INET,SOCK_STREAM,0))<=0) //check if sockets being used
 	{
 		// print error message with perror()
 		perror("socket");
@@ -191,103 +686,104 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	// setup the sockaddr_in struct you defined above
-	// sin_family = AF_INET
-	// sin_addr.s_addr = INADDR_ANY
-	// sin_port = htons(port number)
-	address.sin_family = AF_INET;
-        address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(PORT);
-	/* STEP 2: bind */
-	// Bind is to associate your socket (the file de\
-	// scriptor -- an integer) with your server addr
-	// and port number. These info is already defined
-	// in sockaddr_in struct above.
-	
-	// You can call 
-	// bind(socket, (struct sockaddr*)&server_addr, sizeof sockaddr struct)
-	if (bind(server_sock, (struct sockaddr*)&address, sizeof(address)) < 0)
+	printf("Received connections from: ");
+	fflush(stdout);
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = INADDR_ANY;
+	servaddr.sin_port = htons(strtol(argv[2],NULL,10)); //set to a random port which isn't being used
+	while(1)
 	{
-		// perror() report error message
-		perror("bind");
-		// close socket
-		close(server_sock);
-		// exit your program
-		exit(EXIT_FAILURE);
-	}
+		bind(listen_fd, (struct sockaddr *) &servaddr, sizeof(servaddr)); //bind program to that port
+		
+		socklen_t len = sizeof(servaddr);
+		
+		//if (getsockname(listen_fd, (struct sockaddr *)&servaddr, &len) == -1)
+	//	{
+	//		perror("getsockname");
+	//		return 0;
+	//	} //checl of socket binded correctly
+//
+//		printf("Running On Port Number: %d\n", ntohs(servaddr.sin_port)); //get port
 
-	/* STEP 3: Listen */
-	// Now we have a binded socket, we can use this 
-	// socket to listen on a port
-	
-	// You can call
-	// int listen(int socket, int backlog)
-	if (listen(server_sock, 0) < 0)
-	{
-		// perror() report error message
-		perror("listen");
-		// close socket
-		close(server_sock);
-		// exit your program
-		exit(EXIT_FAILURE);
-	}
+		listen(listen_fd, 500); //allow for max 10 connections (not sure how it changes threads)
+		
+		FILE* fp=fopen("files_sorted.txt","w");
+		
+		fflush(fp);
+		fclose(fp);
+		token=malloc(100);
 
-	printf("Waiting for connections...\n");
+		struct sockaddr* client_addr;
+		struct sockaddr* addr;
+		int sizeaddr=sizeof(addr);
+		comm_fd = accept(listen_fd, (struct sockaddr*)&addr, &sizeaddr);
+		struct sockaddr_in* sai=(struct sockaddr_in*)&addr;
+		//struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&client_addr;
+		//struct in_addr ipAddr = pV4Addr->sin_addr;
+		//char str[INET_ADDRSTRLEN];
+		//inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
+//		printf("%s,",client_addr->sa_data);
+		char *ip = inet_ntoa(sai->sin_addr);
+//		printf("fsf\n");
+//		fflush(stdout);
+		printf("%s,",ip);
+		fflush(stdout);
 
-	init_tid_pool();
-	// we use a while loop to keep waiting for connections
-	while (status)
-	{
-		/* STEP 4: create connection/accept connection request */
-		// use client socket to accept client request
-		// accept(int server_socket, NULL, NULL)
-		// you can setup the second and third arguments other 
-		// than NULL
-		client_sock = accept(server_sock, NULL, NULL);
-		// check if accept() is successful or not
-		if (client_sock < 0)
+		if (read(comm_fd, token, 100) == 0) //get token
 		{
-			// perror() report error message
-			perror("accept");
-			// close socket
-			close(server_sock);
-			// exit your program
+			//printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+			free(token);
+			pthread_mutex_unlock(&socklock);
 			exit(EXIT_FAILURE);
 		}
+		//printf("%s\n",token);
+		write(comm_fd,"q",2);
 
-		// replace client socket below with your client socket variable name
-		printf("[+] Connect to client %d\n", client_sock); 
-
-		// the last argument is tricky not a good way to do, just demo
-		// replace client socket with your client socket variable name
-		if (num_of_thread < MAX_NUM_THREAD)
+		
+		if (read(comm_fd, out_dir_global, 999) == 0) //get out directory
 		{
-			int i = get_tid();
-			// replace client socket here
-			tid_pool[i].socketfd = client_sock;
-			pthread_create(&tid_pool[i].tid, NULL, service, (void *)i);
-			/* You need to add lock here */
-			num_of_thread++;
-			/* add lock above */
-			pthread_detach(tid_pool[i].tid);
+			//printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+			free(out_dir_global);
+			pthread_mutex_unlock(&socklock);
+			exit(EXIT_FAILURE);
 		}
+		//printf("%s\n",token);
+		write(comm_fd,"q",2);
 
-		/* what if num_of_thread >= MAX_NUM_THREAD? 
-		 * You need to think about a way to solve this
-		 * problem
-		 * CV/semaphore ... or other better solution
-		 * */
-		else
+
+
+
+		while(comm_fd = accept(listen_fd, (struct sockaddr*) NULL, NULL)) //start listening on connection 
 		{
-			// just dirty code for demo ;)
-			while (num_of_thread >= MAX_NUM_THREAD)
+			//printf("got one\n");
+			void* ret;
+			pthread_mutex_lock(&m);
+			pthread_t index=threadIDs[threadIndex++];
+			pthread_mutex_unlock(&m);
+			pthread_create(&index,NULL,&rec,NULL);
+			pthread_join(index,&ret);
+			char* val=(char*)ret;
+			if(val[0]=='y')
 			{
-				sleep(1);
+	/////			state='1';
+				break;
+				/*
+				if (read(comm_fd, token, sizeof(token)) == 0) //get size lines of file
+				{
+					printf("[-] Disconnected from client %d\n", listen_fd); //to be changed to ip?
+					free(token);
+					pthread_mutex_unlock(&socklock);
+					exit(EXIT_FAILURE);
+				}
+				write(comm_fd,"q",2);
+				*/
 			}
 		}
-	}
 
-	/* clean up */
-	close(server_sock);
-	return 0;
+	}	
+	printf("\n");
+	
+	close(listen_fd);
+	
+	exit(EXIT_SUCCESS);
 }
